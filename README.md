@@ -1,6 +1,6 @@
 # vue-employee-management
 
-## Project setup (whm)
+## Project setup
 ```
 npm install
 ```
