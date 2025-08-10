@@ -1,0 +1,422 @@
+<template>
+  <div>
+    <!-- 共通ナビメニュー -->
+    <nav class="main-nav">
+      <ul>
+         <li><router-link to="/top">ホーム</router-link></li>
+        <li><router-link to="/employee_infoshow">基本情報</router-link></li>
+        <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
+        <li><router-link to="/employee_search">人材管理</router-link></li>
+        <li><a href="#">技術交流モジュール</a></li>
+        <li><a href="#">交流エリア</a></li>
+      </ul>
+    </nav>
+
+    <div class="container">
+      <h1>従業員基本情報表示</h1>
+
+      <!-- 写真 -->
+      <section>
+        <img src="images/face.jpg" alt="従業員写真" class="photo" />
+      </section>
+
+      <!-- 基本情報 -->
+      <section class="basic-info">
+        <h2>基本情報</h2>
+        <dl>
+          <template v-for="(value, key) in basicInfo" :key="key">
+            <dt>{{ key }}</dt>
+            <dd>{{ value }}</dd>
+          </template>
+        </dl>
+      </section>
+
+      <!-- 技術スキル -->
+      <section>
+        <h2>技術スキル（評価 1〜7）</h2>
+        <ul class="skills-list">
+          <li
+            v-for="skill in skills"
+            :key="skill.name"
+            class="skill-item"
+          >
+            {{ skill.name }}
+            <span :class="['skill-level', 'level-' + skill.level]">{{ skill.level }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 資格 -->
+      <section>
+        <h2>資格</h2>
+        <ul class="cert-list">
+          <li v-for="cert in certifications" :key="cert.name">
+            <span class="cert-name" :title="cert.name">{{ cert.name }}</span>
+            <span class="cert-status">{{ cert.status }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- プロジェクト経験 -->
+      <section>
+        <h2>プロジェクト経験</h2>
+        <ul class="project-list">
+          <li v-for="(project, index) in projects" :key="index">{{ project }}</li>
+        </ul>
+      </section>
+
+      <!-- 自己PR -->
+      <section>
+        <h2>自己PR</h2>
+        <p class="self-pr" v-html="selfPR"></p>
+      </section>
+
+      <section class="edit-section" style="text-align: center; margin-top: 40px;">
+      <router-link to="/employee_info_edit" class="edit-button">編集</router-link>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "EmployeeInfoShow",
+  data() {
+    return {
+      photo: "images/face.jpg",
+      basicInfo: {
+        "氏名": "山田 太郎",
+        "社員番号": "20250123",
+        "メールアドレス": "yamada.taro@example.com",
+        "電話番号": "080-1234-5678",
+        "生年月日": "1987年6月15日",
+        "性別": "男性",
+        "住所": "東京都港区芝浦3-2-16 A-PLACE田町イースト 6F",
+        "最終学歴": "東京工業大学 工学部 情報工学科 卒業（2010年3月）",
+        "入社年月日": "2015年4月1日",
+        "部署": "開発部",
+        "役職": "シニアエンジニア",
+        "勤務形態": "正社員",
+        "直属上司": "佐藤 一郎",
+        "緊急連絡先": "090-9876-5432（妻）",
+        "Slack ID": "@taro.yamada",
+        "Teams ID": "taro.yamada@hi-think.co.jp",
+      },
+      skills: [
+        { name: "Java", level: 6 },
+        { name: "Python", level: 5 },
+        { name: "JavaScript", level: 7 },
+        { name: "TypeScript", level: 6 },
+        { name: "AWS", level: 6 },
+        { name: "Azure", level: 4 },
+        { name: "GCP", level: 3 },
+        { name: "OpenStack", level: 2 },
+        { name: "React", level: 6 },
+        { name: "Vue.js", level: 5 },
+        { name: "Angular", level: 3 },
+        { name: "Svelte", level: 2 },
+        { name: "Node.js", level: 5 },
+        { name: "Spring Boot", level: 5 },
+        { name: "Django", level: 3 },
+        { name: "Ruby on Rails", level: 2 },
+        { name: "Flutter", level: 3 },
+        { name: "React Native", level: 3 },
+        { name: "MySQL", level: 7 },
+        { name: "PostgreSQL", level: 6 },
+        { name: "MongoDB", level: 5 },
+        { name: "Redis", level: 4 },
+        { name: "Jenkins", level: 5 },
+        { name: "GitHub Actions", level: 5 },
+        { name: "GitLab CI", level: 4 },
+        { name: "Docker", level: 6 },
+        { name: "Kubernetes", level: 5 },
+        { name: "Helm", level: 4 },
+        { name: "Terraform", level: 4 },
+        { name: "Ansible", level: 3 },
+        { name: "Pulumi", level: 2 },
+        { name: "TensorFlow", level: 4 },
+        { name: "PyTorch", level: 3 },
+        { name: "GraphQL", level: 4 },
+        { name: "REST API", level: 7 },
+        { name: "WebAssembly", level: 2 },
+        { name: "Serverless (Lambda等)", level: 4 },
+        { name: "Kafka", level: 3 },
+        { name: "Elasticsearch", level: 4 },
+      ],
+      certifications: [
+        { name: "基本情報技術者試験", status: "取得済み" },
+        { name: "AWS認定ソリューションアーキテクト – アソシエイト", status: "取得済み" },
+        { name: "Oracle Certified Java Programmer", status: "取得済み" },
+      ],
+      projects: [
+        "社内基幹システムの刷新プロジェクト（リーダー、2019-2021）",
+        "AWSクラウド移行プロジェクト（メンバー、2022）",
+        "新規Webサービス開発（フロントエンド担当、2023）",
+      ],
+      selfPR: `15年以上のシステム開発経験があり、JavaとJavaScriptを中心に幅広い技術を扱えます。<br>
+      チームリーダーとしてプロジェクトマネジメント経験も豊富です。<br>
+      新しい技術を学ぶことが好きで、常に最新のトレンドをキャッチアップしています。`,
+    };
+  },
+};
+</script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap');
+
+body {
+  margin: 0;
+  font-family: "游ゴシック体", "Yu Gothic", "Noto Serif JP", serif, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #e4e9f2 100%);
+  padding-top: 64px;
+  color: #2e3a59;
+  line-height: 1.8;
+}
+
+.main-nav {
+  width: 100%;
+  background-color: #1a4f9c;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.main-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.main-nav li {
+  margin: 0;
+}
+
+.main-nav a {
+  display: block;
+  padding: 16px 24px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.3s ease;
+}
+
+.main-nav a:hover {
+  background-color: #143a6e;
+}
+
+/* container を全画面幅にして枠なしに */
+.container {
+  max-width: 100%;
+  margin: 50px auto 100px;
+  padding: 30px 40px;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #1f2e4a;
+  margin-bottom: 36px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+section {
+  margin-bottom: 50px;
+  border-bottom: 1px solid #dde3ea;
+  padding-bottom: 36px;
+}
+
+section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+dl {
+  padding-left: 200px; /* ← ここを追加 */
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  row-gap: 18px;
+  column-gap: 28px;
+  color: #3c4a6e;
+  font-size: 17px;
+  margin: 0;
+}
+
+dt {
+  font-weight: 700;
+  color: #455a86;
+  padding-top: 4px;
+}
+
+dd {
+  margin: 0;
+  white-space: pre-wrap;
+  font-weight: 500;
+}
+
+.edit-button {
+  display: inline-block;
+  padding: 12px 28px;
+  background-color: #1a4f9c;
+  color: #fff;
+  font-weight: bold;
+  font-size: 16px;
+  text-decoration: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
+}
+.edit-button:hover {
+  background-color: #143a6e;
+}
+
+.skills-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.skill-item {
+  background: linear-gradient(145deg, #f0f4ff, #d9e1ff);
+  border-radius: 20px;
+  padding: 14px 18px;
+  box-shadow:
+    4px 4px 6px #bcc9f2,
+    -4px -4px 6px #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: #344a91;
+  font-size: 15px;
+  transition: transform 0.2s ease;
+  cursor: default;
+}
+.skill-item:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    6px 6px 8px #b0bcf0,
+    -6px -6px 8px #f7f9ff;
+}
+
+.skill-level {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+  line-height: 28px;
+  font-size: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.level-1 { background-color: #bbbdbf; }
+.level-2 { background-color: #7f9cff; }
+.level-3 { background-color: #5984ff; }
+.level-4 { background-color: #3f6ced; }
+.level-5 { background-color: #3452b1; }
+.level-6 { background-color: #2a3a79; }
+.level-7 { background-color: #1e2a55; }
+
+.photo {
+  display: block;
+  max-width: 150px;
+  max-height: 150px;
+  margin: 0 auto 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #9ab8ff;
+  box-shadow:
+    0 6px 15px rgba(58,84,148,0.25);
+}
+
+.self-pr {
+  white-space: pre-wrap;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.8;
+  color: #3c4a6e;
+  background-color: #f5f7ff;
+  border-radius: 12px;
+  padding: 18px 24px;
+  box-shadow: inset 2px 2px 6px #d7dff9;
+  letter-spacing: 0.02em;
+}
+
+ul.project-list {
+  list-style: disc inside;
+  color: #455a86;
+  font-size: 16px;
+  font-weight: 500;
+  padding-left: 20px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* 資格部分 横並び */
+.cert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #455a86;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cert-list li {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #dde3ea;
+  padding-bottom: 6px;
+}
+
+.cert-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 75%;
+}
+
+.cert-status {
+  flex-shrink: 0;
+  color: #3c4a6e;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  dl {
+    grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+  .skills-list {
+    grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .cert-list li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .cert-status {
+    max-width: 100%;
+  }
+}
+</style>

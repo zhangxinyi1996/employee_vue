@@ -68,11 +68,12 @@ const handleLogin = async () => {
       password: password.value
     })
 
-    const token = data.token
+    const token =data.token  // ここを必ずresponseに合わせてください
     localStorage.setItem('token', token)
 
     alert('ログイン成功')
-    router.push('/dashboard')
+-   router.push('/dashboard')
++   router.push('/top')
   } catch (err) {
     showError.value = true
     errorMessage.value = err.response?.data?.message || 'ログインに失敗しました'
@@ -86,7 +87,18 @@ const goToRegister = () => {
 }
 </script>
 
-<style scoped>
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+
+  /* 背景をグラデーション＋画像に */
+  background: linear-gradient(135deg, rgba(74,144,226,0.6), rgba(255,182,193,0.6)),
+              url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f') no-repeat center center fixed;
+  background-size: cover;
+}
 .login-container {
   background: #ffffffee;
   padding: 40px 30px;
