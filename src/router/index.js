@@ -36,7 +36,17 @@ const routes = [
     path: '/itexchange_area',
     name: 'itexchange_area',
     component: () => import('../views/itexchange_area.vue') // ← 追加
-  }
+  },
+   {
+    path: '/employee_skillmap',
+    name: 'employee_skillmap',
+    component: () => import('../views/employee_skillmap.vue') // ← 追加
+  },
+   {
+    path: '/employee_search',
+    name: 'employee_search',
+    component: () => import('../views/employee_search.vue') // ← 追加
+  },
 ]
 const router = createRouter({
   history: createWebHistory(),
