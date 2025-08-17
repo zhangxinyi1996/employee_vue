@@ -26,10 +26,18 @@ const routes = [
   path: '/employee_info_edit',
   name: 'EmployeeInfo_info_edit',
   component: () => import('../views/employee_info_edit.vue')
-}
-
+},
+{
+    path: '/exchange_area',
+    name: 'exchange_area',
+    component: () => import('../views/exchange_area.vue') // ← 追加
+  },
+  {
+    path: '/itexchange_area',
+    name: 'itexchange_area',
+    component: () => import('../views/itexchange_area.vue') // ← 追加
+  }
 ]
-
 const router = createRouter({
   history: createWebHistory(),
   routes

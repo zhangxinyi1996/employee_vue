@@ -8,7 +8,9 @@
         <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
         <li><router-link to="/employee_search">人材管理</router-link></li>
         <li><a href="#">技術交流モジュール</a></li>
-        <li><a href="#">交流エリア</a></li>
+         <li><router-link to="/exchange_area">交流エリア</router-link></li>
+         <!-- ログアウトを右端に -->
+        <li class="logout"><a href="/logout">ログアウト</a></li>
       </ul>
     </nav>
 
@@ -204,12 +206,22 @@ body {
   font-weight: 600;
   font-size: 15px;
   transition: background 0.3s ease;
+   height: 20px;   /* ← 他ボタンと同じ高さに統一 */
 }
 
 .main-nav a:hover {
   background-color: #143a6e;
 }
-
+/* ログアウトだけ赤色 */
+.main-nav .logout {
+  margin-left: auto;
+}
+.main-nav .logout a {
+  background-color: #d9534f;
+}
+.main-nav .logout a:hover {
+  background-color: #b52b27;
+}
 /* container を全画面幅にして枠なしに */
 .container {
   max-width: 100%;
