@@ -53,6 +53,7 @@ const togglePassword = () => {
 }
 
 const handleLogin = async () => {
+  localStorage.removeItem('token')
   if (!username.value || !password.value) {
     showError.value = true
     errorMessage.value = 'ユーザー名とパスワードを入力してください。'
