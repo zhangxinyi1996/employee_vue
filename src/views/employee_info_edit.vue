@@ -5,10 +5,11 @@
       <ul>
         <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
-        <li><a href="#">スキル分析</a></li>
-        <li><a href="#">人材管理</a></li>
+        <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
+        <li><router-link to="/employee_search">人材管理</router-link></li>
         <li><a href="#">技術交流モジュール</a></li>
-        <li><a href="#">交流エリア</a></li>
+        <li><router-link to="/exchange_area">交流エリア</router-link></li>
+        <li class="logout"><a href="/logout">ログアウト</a></li>
       </ul>
     </nav>
 
@@ -20,7 +21,7 @@
       <form @submit.prevent="onSave" enctype="multipart/form-data">
         <!-- 写真 -->
         <section class="form-photo">
-          <img :src="photoPreview || defaultPhoto" alt="従業員写真" class="photo" />
+          <img :src="photoPreview || form.photo" alt="従業員写真" class="photo" />
           <input type="file" @change="onFileChange" accept="image/*" />
         </section>
 
@@ -28,16 +29,11 @@
         <section class="form-section">
           <h2>基本情報</h2>
           <dl>
-            <dt>氏名</dt>
-            <dd><input type="text" v-model="form.name" /></dd>
-            <dt>社員番号</dt>
-            <dd><input type="text" v-model="form.employeeId" /></dd>
-            <dt>メールアドレス</dt>
-            <dd><input type="email" v-model="form.email" /></dd>
-            <dt>電話番号</dt>
-            <dd><input type="tel" v-model="form.phone" /></dd>
-            <dt>生年月日</dt>
-            <dd><input type="date" v-model="form.dob" /></dd>
+            <dt>氏名</dt><dd><input type="text" v-model="form.name" /></dd>
+            <dt>社員番号</dt><dd><input type="text" v-model="form.employeeId" /></dd>
+            <dt>メールアドレス</dt><dd><input type="email" v-model="form.email" /></dd>
+            <dt>電話番号</dt><dd><input type="tel" v-model="form.phone" /></dd>
+            <dt>生年月日</dt><dd><input type="date" v-model="form.dob" /></dd>
             <dt>性別</dt>
             <dd>
               <select v-model="form.gender">
@@ -46,41 +42,29 @@
                 <option>その他</option>
               </select>
             </dd>
-            <dt>住所</dt>
-            <dd><input type="text" v-model="form.address" /></dd>
-            <dt>最終学歴</dt>
-            <dd><input type="text" v-model="form.education" /></dd>
-            <dt>入社年月日</dt>
-            <dd><input type="date" v-model="form.joined" /></dd>
-            <dt>部署</dt>
-            <dd><input type="text" v-model="form.department" /></dd>
-            <dt>役職</dt>
-            <dd><input type="text" v-model="form.position" /></dd>
-            <dt>勤務形態</dt>
-            <dd><input type="text" v-model="form.workStyle" /></dd>
-            <dt>直属上司</dt>
-            <dd><input type="text" v-model="form.manager" /></dd>
-            <dt>緊急連絡先</dt>
-            <dd><input type="text" v-model="form.emergency" /></dd>
-            <dt>Slack ID</dt>
-            <dd><input type="text" v-model="form.slack" /></dd>
-            <dt>Teams ID</dt>
-            <dd><input type="text" v-model="form.teams" /></dd>
+            <dt>住所</dt><dd><input type="text" v-model="form.address" /></dd>
+            <dt>最終学歴</dt><dd><input type="text" v-model="form.education" /></dd>
+            <dt>入社年月日</dt><dd><input type="date" v-model="form.joined" /></dd>
+            <dt>部署</dt><dd><input type="text" v-model="form.department" /></dd>
+            <dt>役職</dt><dd><input type="text" v-model="form.position" /></dd>
+            <dt>勤務形態</dt><dd><input type="text" v-model="form.workStyle" /></dd>
+            <dt>直属上司</dt><dd><input type="text" v-model="form.manager" /></dd>
+            <dt>緊急連絡先</dt><dd><input type="text" v-model="form.emergency" /></dd>
+            <dt>Slack ID</dt><dd><input type="text" v-model="form.slack" /></dd>
+            <dt>Teams ID</dt><dd><input type="text" v-model="form.teams" /></dd>
           </dl>
         </section>
 
         <!-- 技術スキル -->
         <section class="form-section">
-          <h2>技術スキル（評価 1〜7）</h2>
+          <h2>技術スキル（0～7）</h2>
           <div class="skills-list-edit">
             <div v-for="(skill, index) in skills" :key="index" class="skill-input">
-              <input type="text" v-model="skill.name" />
+              <input type="text" v-model="skill.name" readonly />
               <select v-model.number="skill.level">
-                <option v-for="n in 7" :key="n" :value="n">{{ n }}</option>
+                <option v-for="n in 8" :key="n-1" :value="n-1">{{ n-1 }}</option>
               </select>
-              <button type="button" @click="removeSkill(index)">削除</button>
             </div>
-            <button type="button" @click="addSkill">スキル追加</button>
           </div>
         </section>
 
@@ -89,8 +73,8 @@
           <h2>資格</h2>
           <div class="cert-list-edit">
             <div v-for="(cert, idx) in certs" :key="idx" class="cert-input">
-              <input type="text" v-model="cert.name" />
-              <input type="text" v-model="cert.status" />
+              <input type="text" v-model="cert.name" placeholder="資格名" />
+              <input type="date" v-model="cert.date" />
               <button type="button" @click="removeCert(idx)">削除</button>
             </div>
             <button type="button" @click="addCert">資格追加</button>
@@ -102,7 +86,7 @@
           <h2>プロジェクト経験</h2>
           <div class="project-list-edit">
             <div v-for="(project, idx) in projects" :key="idx" class="project-input">
-              <input type="text" v-model="project.name" />
+              <input type="text" v-model="project.name" placeholder="プロジェクト名" />
               <button type="button" @click="removeProject(idx)">削除</button>
             </div>
             <button type="button" @click="addProject">プロジェクト追加</button>
@@ -131,14 +115,11 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// デフォルト写真
-const defaultPhoto = '/images/face.jpg' // 画像パスは適宜調整してください
-
-// 画像プレビュー用
+const defaultPhoto = '/images/face.jpg'
 const photoPreview = ref('')
 
-// フォームデータ
 const form = ref({
+  photo: defaultPhoto,
   name: '山田 太郎',
   employeeId: '20250123',
   email: 'yamada.taro@example.com',
@@ -155,126 +136,68 @@ const form = ref({
   emergency: '090-9876-5432（妻）',
   slack: '@taro.yamada',
   teams: 'taro.yamada@hi-think.co.jp',
-  selfPR:
-    '15年以上のシステム開発経験があり、JavaとJavaScriptを中心に幅広い技術を扱えます。\nチームリーダーとしてプロジェクトマネジメント経験も豊富です。\n新しい技術を学ぶことが好きで、常に最新のトレンドをキャッチアップしています。'
+  selfPR: '15年以上のシステム開発経験があります…'
 })
 
-// 技術スキル配列
 const skills = ref([
-  { name: 'Java', level: 6 },
-  { name: 'Python', level: 5 },
-  { name: 'JavaScript', level: 7 },
-  { name: 'TypeScript', level: 6 },
-  { name: 'AWS', level: 6 },
-  { name: 'Azure', level: 4 },
-  { name: 'GCP', level: 3 },
-  { name: 'OpenStack', level: 2 },
-  { name: 'React', level: 6 },
-  { name: 'Vue.js', level: 5 },
-  { name: 'Angular', level: 3 },
-  { name: 'Svelte', level: 2 },
-  { name: 'Node.js', level: 5 },
-  { name: 'Spring Boot', level: 5 },
-  { name: 'Django', level: 3 },
-  { name: 'Ruby on Rails', level: 2 },
-  { name: 'Flutter', level: 3 },
-  { name: 'React Native', level: 3 },
-  { name: 'MySQL', level: 7 },
-  { name: 'PostgreSQL', level: 6 },
-  { name: 'MongoDB', level: 5 },
-  { name: 'Redis', level: 4 },
-  { name: 'Jenkins', level: 5 },
-  { name: 'GitHub Actions', level: 5 },
-  { name: 'GitLab CI', level: 4 },
-  { name: 'Docker', level: 6 },
-  { name: 'Kubernetes', level: 5 },
-  { name: 'Helm', level: 4 },
-  { name: 'Terraform', level: 4 },
-  { name: 'Ansible', level: 3 },
-  { name: 'Pulumi', level: 2 },
-  { name: 'TensorFlow', level: 4 },
-  { name: 'PyTorch', level: 3 },
-  { name: 'GraphQL', level: 4 },
-  { name: 'REST API', level: 7 },
-  { name: 'WebAssembly', level: 2 },
-  { name: 'Serverless (Lambda等)', level: 4 },
-  { name: 'Kafka', level: 3 },
-  { name: 'Elasticsearch', level: 4 }
+  { name: "Java", level: 0 }, { name: "Python", level: 0 }, { name: "JavaScript", level: 0 },
+  { name: "TypeScript", level: 0 }, { name: "AWS", level: 0 }, { name: "Azure", level: 0 },
+  { name: "GCP", level: 0 }, { name: "OpenStack", level: 0 }, { name: "React", level: 0 },
+  { name: "Vue.js", level: 0 }, { name: "Angular", level: 0 }, { name: "Svelte", level: 0 },
+  { name: "Node.js", level: 0 }, { name: "Spring Boot", level: 0 }, { name: "Django", level: 0 },
+  { name: "Ruby on Rails", level: 0 }, { name: "Flutter", level: 0 }, { name: "React Native", level: 0 },
+  { name: "MySQL", level: 0 }, { name: "PostgreSQL", level: 0 }, { name: "MongoDB", level: 0 },
+  { name: "Redis", level: 0 }, { name: "Jenkins", level: 0 }, { name: "GitHub Actions", level: 0 },
+  { name: "GitLab CI", level: 0 }, { name: "Docker", level: 0 }, { name: "Kubernetes", level: 0 },
+  { name: "Helm", level: 0 }, { name: "Terraform", level: 0 }, { name: "Ansible", level: 0 },
+  { name: "Pulumi", level: 0 }, { name: "TensorFlow", level: 0 }, { name: "PyTorch", level: 0 },
+  { name: "GraphQL", level: 0 }, { name: "REST API", level: 0 }, { name: "WebAssembly", level: 0 },
+  { name: "Serverless (Lambda等)", level: 0 }, { name: "Kafka", level: 0 }, { name: "Elasticsearch", level: 0 }
 ])
 
-// 資格配列
 const certs = ref([
-  { name: '基本情報技術者試験', status: '取得済み' },
-  { name: 'AWS認定ソリューションアーキテクト – アソシエイト', status: '取得済み' }
+  { name: "基本情報技術者試験", date: "" },
+  { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "" }
 ])
 
-// プロジェクト経験配列
 const projects = ref([
-  { name: '社内基幹システムの刷新プロジェクト（リーダー、2019-2021）' },
-  { name: 'AWSクラウド移行プロジェクト（メンバー、2022）' }
+  { name: "社内基幹システムの刷新プロジェクト" },
+  { name: "AWSクラウド移行プロジェクト" }
 ])
 
 function onFileChange(e) {
   const file = e.target.files[0]
   if (file) {
     const reader = new FileReader()
-    reader.onload = (event) => {
-      photoPreview.value = event.target.result
-    }
+    reader.onload = (event) => { photoPreview.value = event.target.result }
     reader.readAsDataURL(file)
   }
 }
 
-function addSkill() {
-  skills.value.push({ name: '', level: 1 })
-}
-function removeSkill(index) {
-  skills.value.splice(index, 1)
-}
+function addCert() { certs.value.push({ name: '', date: '' }) }
+function removeCert(idx) { certs.value.splice(idx, 1) }
 
-function addCert() {
-  certs.value.push({ name: '', status: '' })
-}
-function removeCert(index) {
-  certs.value.splice(index, 1)
-}
-
-function addProject() {
-  projects.value.push({ name: '' })
-}
-function removeProject(index) {
-  projects.value.splice(index, 1)
-}
+function addProject() { projects.value.push({ name: '' }) }
+function removeProject(idx) { projects.value.splice(idx, 1) }
 
 function onSave() {
-  if (confirm('編集した内容を保存してもよろしいでしょうか？')) {
-    // ここで保存処理を実装（API呼び出しなど）
-    // 例: axios.post('/api/employee', { form: form.value, skills: skills.value, ... })
-
-    // 保存後は表示画面へ遷移
+  if (confirm('編集した内容を保存してもよろしいですか？')) {
     router.push('/employee_infoshow')
   }
 }
-
-function onCancel() {
-  router.push('/employee_infoshow')
-}
+function onCancel() { router.push('/employee_infoshow') }
 </script>
 
 <style scoped>
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="date"],
-select,
-textarea {
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 15px;
-  border: 1px solid #ccd2e0;
-  border-radius: 6px;
-  background-color: #f9fbff;
-  font-family: inherit;
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap');
+
+body {
+  margin: 0;
+  font-family: "游ゴシック体", "Yu Gothic", "Noto Serif JP", serif, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #e4e9f2 100%);
+  padding-top: 64px;
+  color: #2e3a59;
+  line-height: 1.8;
 }
 
 .main-nav {
@@ -308,73 +231,182 @@ textarea {
   font-weight: 600;
   font-size: 15px;
   transition: background 0.3s ease;
+  height: 20px;
 }
 
 .main-nav a:hover {
   background-color: #143a6e;
 }
 
+.main-nav .logout {
+  margin-left: auto;
+}
+
+.main-nav .logout a {
+  background-color: #d9534f;
+}
+
+.main-nav .logout a:hover {
+  background-color: #b52b27;
+}
+
+.container {
+  max-width: 100%;
+  margin: 50px auto 100px;
+  padding: 30px 40px;
+  background-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #1f2e4a;
+  margin-bottom: 36px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+section {
+  margin-bottom: 50px;
+  border-bottom: 1px solid #dde3ea;
+  padding-bottom: 36px;
+}
+
+section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+dl {
+  padding-left: 200px;
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  row-gap: 18px;
+  column-gap: 28px;
+  color: #3c4a6e;
+  font-size: 17px;
+  margin: 0;
+}
+dl dd input[type="text"],
+dl dd input[type="email"],
+dl dd input[type="tel"],
+dl dd input[type="date"],
+dl dd select {
+  width: 800px;        /* 親要素に合わせる */
+  box-sizing: border-box; /* パディング込みで幅計算 */
+}
+
+/* 中央寄せにする場合 */
+dl dd {
+  display: flex;
+  justify-content: center; /* 横方向中央寄せ */
+}
+
+dt {
+  font-weight: 700;
+  color: #455a86;
+  padding-top: 4px;
+}
+
+dd {
+  margin: 0;
+  white-space: pre-wrap;
+  font-weight: 500;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="date"], select, textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #cfd6e4;
+  outline: none;
+  box-shadow: inset 1px 1px 4px rgba(0,0,0,0.05);
+}
+
 textarea {
   resize: vertical;
 }
 
-.form-section {
-  margin-bottom: 40px;
-}
-
-.form-buttons {
-  text-align: center;
-  margin-top: 40px;
-}
-
-.form-buttons button {
-  padding: 12px 32px;
-  font-size: 16px;
-  font-weight: bold;
-  color: #fff;
-  background-color: #1a4f9c;
-  border: none;
+button {
+  padding: 10px 20px;
   border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  background-color: #1a4f9c;
+  color: #fff;
   cursor: pointer;
-  margin: 0 10px;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
 }
 
-.form-buttons button:hover {
+button:hover {
   background-color: #143a6e;
 }
 
-.form-photo {
-  text-align: center;
-  margin-bottom: 30px;
+.skills-list-edit, .cert-list-edit, .project-list-edit {
+  display: grid;
+  gap: 12px;
 }
 
-.form-photo input[type="file"] {
-  margin-top: 12px;
-}
-
-.skills-list-edit,
-.cert-list-edit,
-.project-list-edit {
+.skill-input, .cert-input, .project-input {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.skill-input,
-.cert-input,
-.project-input {
-  display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  justify-content: center;  /* 水平方向中央寄せ */
 }
 
+/* 技術名は広め */
 .skill-input input[type="text"],
-.cert-input input[type="text"],
-.project-input input[type="text"] {
+.skill-input select {
+ width: 800px;   /* 最大幅を指定（任意） */
+}
+
+/* 技術レベルは短く */
+.skill-input select,
+.skill-input input[type="number"] {
+  width: 200px;
+}
+
+.cert-input input, .project-input input {
   flex: 1;
 }
 
-.skill-input select {
-  width: 80px;
+.photo {
+  display: block;
+  max-width: 150px;
+  max-height: 150px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #9ab8ff;
+  box-shadow: 0 6px 15px rgba(58,84,148,0.25);
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+@media (max-width: 600px) {
+  dl {
+    grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+  .skills-list-edit, .cert-list-edit, .project-list-edit {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .cert-input, .project-input, .skill-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>

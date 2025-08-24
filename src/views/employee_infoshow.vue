@@ -54,7 +54,7 @@
         <ul class="cert-list">
           <li v-for="cert in certifications" :key="cert.name">
             <span class="cert-name" :title="cert.name">{{ cert.name }}</span>
-            <span class="cert-status">{{ cert.status }}</span>
+            <span class="cert-date">{{ cert.date }}</span>
           </li>
         </ul>
       </section>
@@ -146,10 +146,11 @@ export default {
         { name: "Elasticsearch", level: 4 },
       ],
       certifications: [
-        { name: "基本情報技術者試験", status: "取得済み" },
-        { name: "AWS認定ソリューションアーキテクト – アソシエイト", status: "取得済み" },
-        { name: "Oracle Certified Java Programmer", status: "取得済み" },
+        { name: "基本情報技術者試験", date: "2012年6月" },
+        { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "2021年11月" },
+        { name: "Oracle Certified Java Programmer", date: "2018年3月" },
       ],
+ 
       projects: [
         "社内基幹システムの刷新プロジェクト（リーダー、2019-2021）",
         "AWSクラウド移行プロジェクト（メンバー、2022）",
@@ -405,7 +406,7 @@ ul.project-list {
   max-width: 75%;
 }
 
-.cert-status {
+.cert-date {
   flex-shrink: 0;
   color: #3c4a6e;
   font-weight: 600;
