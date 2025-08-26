@@ -81,6 +81,7 @@
 </template>
 
 <script>
+import request from '../utils/request'
 export default {
   name: "EmployeeInfoShow",
   data() {
@@ -161,6 +162,57 @@ export default {
       新しい技術を学ぶことが好きで、常に最新のトレンドをキャッチアップしています。`,
     };
   },
+
+  // 在组件实例创建后立即发起请求
+  async created() {
+    await this.fetchEmployeeData();
+  },
+  methods: {
+    // 异步获取员工数据的方法
+    async fetchEmployeeData() {
+      try {
+        // 使用 await 暂停执行，等待请求完成
+
+        const apiData = await request.post(`/employee/3`);
+
+
+        // 调用方法处理并更新数据
+        this.updateBasicInfo(apiData);
+        
+      } catch (error) {
+        console.error("请求员工信息失败:", error);
+        // 可以根据需要处理错误，例如显示错误消息
+      }
+    },
+    
+    // 将 API 返回的数据格式化并更新到 basicInfo
+    updateBasicInfo(data) {
+      // 检查返回数据是否有效
+      if (data && typeof data === 'object') {
+        this.basicInfo = {
+          "氏名": data.name || "未登録",
+          "社員番号": data.employeeId || "未登録",
+          "メールアドレス": data.email || "未登録",
+          "電話番号": data.phoneNo || "未登録",
+          "生年月日": data.birthDate || "未登録", // 假设API返回的字段名是birthDate
+          "性別": data.gender || "未登録",
+          "住所": data.address || "未登録",
+          "最終学歴": data.education || "未登録",
+          "入社年月日": data.hireDate || "未登録",
+          "部署": data.department || "未登録",
+          "役職": data.position || "未登録",
+          "勤務形態": data.employmentType || "未登録",
+          "直属上司": data.managerName || "未登録",
+          "緊急連絡先": data.emergencyContact || "未登録",
+          "Slack ID": data.slackId || "未登録",
+          "Teams ID": data.teamsId || "未登録",
+        };
+        // 同时更新照片路径
+        this.photo = data.photoPath || "images/face.jpg";
+        this.selfPR = data.selfPr || "未登録";
+      }
+    }
+  }
 };
 </script>
 
