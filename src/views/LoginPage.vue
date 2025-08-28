@@ -71,6 +71,7 @@ const handleLogin = async () => {
 
     const token =data.token  // ここを必ずresponseに合わせてください
     localStorage.setItem('token', token)
+    localStorage.setItem('username', username.value) // ← 追加20250826
 
     alert('ログイン成功')
 -   router.push('/dashboard')

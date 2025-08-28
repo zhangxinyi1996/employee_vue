@@ -88,22 +88,22 @@ export default {
     return {
       photo: "images/face.jpg",
       basicInfo: {
-        "氏名": "山田 太郎",
-        "社員番号": "20250123",
-        "メールアドレス": "yamada.taro@example.com",
-        "電話番号": "080-1234-5678",
-        "生年月日": "1987年6月15日",
-        "性別": "男性",
-        "住所": "東京都港区芝浦3-2-16 A-PLACE田町イースト 6F",
-        "最終学歴": "東京工業大学 工学部 情報工学科 卒業（2010年3月）",
-        "入社年月日": "2015年4月1日",
-        "部署": "開発部",
-        "役職": "シニアエンジニア",
-        "勤務形態": "正社員",
-        "直属上司": "佐藤 一郎",
-        "緊急連絡先": "090-9876-5432（妻）",
-        "Slack ID": "@taro.yamada",
-        "Teams ID": "taro.yamada@hi-think.co.jp",
+        "氏名": "",
+        "社員番号": "",
+        "メールアドレス": "",
+        "電話番号": "",
+        "生年月日": "",
+        "性別": "",
+        "住所": "",
+        "最終学歴": "",
+        "入社年月日": "",
+        "部署": "",
+        "役職": "",
+        "勤務形態": "",
+        "直属上司": "",
+        "緊急連絡先": "",
+        "Slack ID": "",
+        "Teams ID": "",
       },
       skills: [
         { name: "Java", level: 6 },
@@ -157,9 +157,7 @@ export default {
         "AWSクラウド移行プロジェクト（メンバー、2022）",
         "新規Webサービス開発（フロントエンド担当、2023）",
       ],
-      selfPR: `15年以上のシステム開発経験があり、JavaとJavaScriptを中心に幅広い技術を扱えます。<br>
-      チームリーダーとしてプロジェクトマネジメント経験も豊富です。<br>
-      新しい技術を学ぶことが好きで、常に最新のトレンドをキャッチアップしています。`,
+      selfPR: "",
     };
   },
 
@@ -172,13 +170,30 @@ export default {
     async fetchEmployeeData() {
       try {
         // 使用 await 暂停执行，等待请求完成
-
-        const apiData = await request.post(`/employee/3`);
-
-
+        const usernameStorage = localStorage.getItem('username') || '';
+        const apiData = await request.post("/employee/preview",{
+        username: usernameStorage
+    });
         // 调用方法处理并更新数据
         this.updateBasicInfo(apiData);
-        
+        // 保存员工情報到 localStorage
+        localStorage.setItem("employeeStatus", apiData.employeeStatus || ''); 
+        localStorage.setItem("employeeId", apiData.employeeId || ''); 
+        localStorage.setItem("departmentName", apiData.DepartmentName || ''); 
+        localStorage.setItem("name", apiData.name || ''); 
+        localStorage.setItem("email", apiData.email || ''); 
+        localStorage.setItem("phoneNo", apiData.phoneNo || ''); 
+        localStorage.setItem("hireDate", apiData.hireDate || ''); 
+        localStorage.setItem("position", apiData.position || ''); 
+        localStorage.setItem("employmentType", apiData.employmentType || ''); 
+        localStorage.setItem("managerName", apiData.managerName || ''); 
+        localStorage.setItem("emergencyTel", apiData.emergencyTel || ''); 
+        localStorage.setItem("slackId", apiData.slackId) || ''; 
+        localStorage.setItem("teamsId", apiData.teamsId || ''); 
+        localStorage.setItem("selfPr", apiData.selfPr || ''); 
+        localStorage.setItem("birthday", apiData.birthday || ''); 
+        localStorage.setItem("gender", apiData.gender || ''); 
+        localStorage.setItem("address", apiData.address || ''); 
       } catch (error) {
         console.error("请求员工信息失败:", error);
         // 可以根据需要处理错误，例如显示错误消息
@@ -188,24 +203,24 @@ export default {
     // 将 API 返回的数据格式化并更新到 basicInfo
     updateBasicInfo(data) {
       // 检查返回数据是否有效
-      if (data && typeof data === 'object') {
+      if ( typeof data === 'object') {
         this.basicInfo = {
-          "氏名": data.name || "未登録",
-          "社員番号": data.employeeId || "未登録",
-          "メールアドレス": data.email || "未登録",
-          "電話番号": data.phoneNo || "未登録",
-          "生年月日": data.birthDate || "未登録", // 假设API返回的字段名是birthDate
-          "性別": data.gender || "未登録",
-          "住所": data.address || "未登録",
-          "最終学歴": data.education || "未登録",
-          "入社年月日": data.hireDate || "未登録",
-          "部署": data.department || "未登録",
-          "役職": data.position || "未登録",
-          "勤務形態": data.employmentType || "未登録",
-          "直属上司": data.managerName || "未登録",
-          "緊急連絡先": data.emergencyContact || "未登録",
-          "Slack ID": data.slackId || "未登録",
-          "Teams ID": data.teamsId || "未登録",
+          "氏名": data.name || "",
+          "社員番号": data.employeeId || "",
+          "メールアドレス": data.email || "",
+          "電話番号": data.phoneNo || "",
+          "生年月日": data.birthDate || "", // 假设API返回的字段名是birthDate
+          "性別": data.gender || "",
+          "住所": data.address || "",
+          "最終学歴": data.education || "",
+          "入社年月日": data.hireDate || "",
+          "部署": data.department || "",
+          "役職": data.position || "",
+          "勤務形態": data.employmentType || "",
+          "直属上司": data.managerName || "",
+          "緊急連絡先": data.emergencyContact || "",
+          "Slack ID": data.slackId || "",
+          "Teams ID": data.teamsId || "",
         };
         // 同时更新照片路径
         this.photo = data.photoPath || "images/face.jpg";

@@ -112,31 +112,33 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import request from '../utils/request'
 
 const router = useRouter()
 
 const defaultPhoto = '/images/face.jpg'
 const photoPreview = ref('')
 
+
 const form = ref({
   photo: defaultPhoto,
-  name: '山田 太郎',
-  employeeId: '20250123',
-  email: 'yamada.taro@example.com',
-  phone: '080-1234-5678',
-  dob: '1987-06-15',
-  gender: '男性',
-  address: '東京都港区芝浦3-2-16 A-PLACE田町イースト 6F',
-  education: '東京工業大学 工学部 情報工学科 卒業（2010年3月）',
-  joined: '2015-04-01',
-  department: '開発部',
-  position: 'シニアエンジニア',
-  workStyle: '正社員',
-  manager: '佐藤 一郎',
-  emergency: '090-9876-5432（妻）',
-  slack: '@taro.yamada',
-  teams: 'taro.yamada@hi-think.co.jp',
-  selfPR: '15年以上のシステム開発経験があります…'
+  name:  localStorage.getItem("name") || '',
+  employeeId: localStorage.getItem("employeeId") || '',
+  email: localStorage.getItem("email") || '',
+  phone: localStorage.getItem("phoneNo") || '',
+  dob: localStorage.getItem("birthday") || '',
+  gender: localStorage.getItem("gender")|| '',
+  address: localStorage.getItem("address") || '',
+  education: localStorage.getItem("name") || '',
+  joined: localStorage.getItem("hireDate")|| '',
+  department:localStorage.getItem("departmentName") || '',
+  position: localStorage.getItem("position") || '',
+  workStyle: localStorage.getItem("employmentType") || '',
+  manager: localStorage.getItem("managerName") || '',
+  emergency: localStorage.getItem("emergencyTel") || '',
+  slack: localStorage.getItem("slackId") || '',
+  teams: localStorage.getItem("teamsId")|| '',
+  selfPR: localStorage.getItem("selfPr")|| ''
 })
 
 const skills = ref([
@@ -180,11 +182,68 @@ function removeCert(idx) { certs.value.splice(idx, 1) }
 function addProject() { projects.value.push({ name: '' }) }
 function removeProject(idx) { projects.value.splice(idx, 1) }
 
-function onSave() {
+async function onSave() {
   if (confirm('編集した内容を保存してもよろしいですか？')) {
+
+   try {
+        // 使用 await 暂停执行，等待请求完成
+        const data = {
+          "employeeStatus":localStorage.getItem("employeeStatus") ,
+          "id":localStorage.getItem("employeeId") ,
+          "departmentName":form.value.department,
+          "name":form.value.name,
+          //"employeeLevel":form.value.employeeLevel,
+          "email":form.value.email,
+          "phoneNo":form.value.phone,
+          "hireDate":form.value.joined,
+          "position":form.value.position,
+          "employmentType":form.value.workStyle,
+          "managerName":form.value.manager,
+          //"emergencyContact":form.value.emergency,
+          "emergencyTel":form.value.emergency,
+          "slackId":form.value.slack,
+          "teamsId":form.value.teams,
+          "photoPath":form.value.photo,
+          "selfPr":form.value.selfPR,
+          "birthday":form.value.dob,
+          "gender":form.value.gender,
+          "address":form.value.address
+          //"staffSkilMap":form.value.dob,
+          //"staffCategoryMap":form.value.dob,
+          
+          //"staffProjectMap":form.value.dob
+        }
+        await request.post("/employee/edit", data);
+        // 调用方法处理并更新数据        
+        // 保存员工情報到 localStorage
+        localStorage.setItem("employeeStatus", "1"); 
+        localStorage.setItem("employeeId", data.id); 
+        localStorage.setItem("departmentName", data.departmentName); 
+        localStorage.setItem("name", data.name); 
+        localStorage.setItem("email", data.email); 
+        localStorage.setItem("phoneNo", data.phoneNo); 
+        localStorage.setItem("hireDate", data.hireDate); 
+        localStorage.setItem("position", data.position); 
+        localStorage.setItem("employmentType", data.employmentType); 
+        localStorage.setItem("managerName", data.managerName); 
+        localStorage.setItem("emergencyTel", data.emergencyTel); 
+        localStorage.setItem("slackId", data.slackId); 
+        localStorage.setItem("teamsId", data.teamsId); 
+        localStorage.setItem("selfPr", data.selfPr); 
+        localStorage.setItem("birthday", data.birthday); 
+        localStorage.setItem("gender", data.gender); 
+        localStorage.setItem("address", data.address); 
+        
+      } catch (error) {
+        console.error("请求员工信息失败:", error);
+        // 可以根据需要处理错误，例如显示错误消息
+      }
+    
+    
     router.push('/employee_infoshow')
   }
 }
+
 function onCancel() { router.push('/employee_infoshow') }
 </script>
 
