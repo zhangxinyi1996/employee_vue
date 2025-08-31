@@ -59,7 +59,7 @@
         <section class="form-section">
           <h2>技術スキル（0～7）</h2>
           <div class="skills-list-edit">
-            <div v-for="(skill, index) in skills" :key="index" class="skill-input">
+            <div v-for="skill in skills" :key="skill.skillId" class="skill-input">
               <input type="text" v-model="skill.name" readonly />
               <select v-model.number="skill.level">
                 <option v-for="n in 8" :key="n-1" :value="n-1">{{ n-1 }}</option>
@@ -139,24 +139,54 @@ const form = ref({
   slack: localStorage.getItem("slackId") || '',
   teams: localStorage.getItem("teamsId")|| '',
   selfPR: localStorage.getItem("selfPr")|| ''
+
 })
 
 const skills = ref([
-  { name: "Java", level: 0 }, { name: "Python", level: 0 }, { name: "JavaScript", level: 0 },
-  { name: "TypeScript", level: 0 }, { name: "AWS", level: 0 }, { name: "Azure", level: 0 },
-  { name: "GCP", level: 0 }, { name: "OpenStack", level: 0 }, { name: "React", level: 0 },
-  { name: "Vue.js", level: 0 }, { name: "Angular", level: 0 }, { name: "Svelte", level: 0 },
-  { name: "Node.js", level: 0 }, { name: "Spring Boot", level: 0 }, { name: "Django", level: 0 },
-  { name: "Ruby on Rails", level: 0 }, { name: "Flutter", level: 0 }, { name: "React Native", level: 0 },
-  { name: "MySQL", level: 0 }, { name: "PostgreSQL", level: 0 }, { name: "MongoDB", level: 0 },
-  { name: "Redis", level: 0 }, { name: "Jenkins", level: 0 }, { name: "GitHub Actions", level: 0 },
-  { name: "GitLab CI", level: 0 }, { name: "Docker", level: 0 }, { name: "Kubernetes", level: 0 },
-  { name: "Helm", level: 0 }, { name: "Terraform", level: 0 }, { name: "Ansible", level: 0 },
-  { name: "Pulumi", level: 0 }, { name: "TensorFlow", level: 0 }, { name: "PyTorch", level: 0 },
-  { name: "GraphQL", level: 0 }, { name: "REST API", level: 0 }, { name: "WebAssembly", level: 0 },
-  { name: "Serverless (Lambda等)", level: 0 }, { name: "Kafka", level: 0 }, { name: "Elasticsearch", level: 0 }
-])
 
+        { "skillId": 0, "name": "Java", "level": 1 },
+        { "skillId": 1, "name": "Python", "level": 2 },
+        { "skillId": 2, "name": "JavaScript", "level": 0 },
+        { "skillId": 3, "name": "TypeScript", "level": 0 },
+        { "skillId": 4, "name": "AWS", "level": 0 },
+        { "skillId": 5, "name": "Azure", "level": 0 },
+        { "skillId": 6, "name": "GCP", "level": 0 },
+        { "skillId": 7, "name": "OpenStack", "level": 0 },
+        { "skillId": 8, "name": "React", "level": 0 },
+        { "skillId": 9,  "name": "Vue.js", "level": 0 },
+        { "skillId": 10, "name": "Angular", "level": 0 },
+        { "skillId": 11, "name": "Svelte", "level": 0 },
+        { "skillId": 12, "name": "Node.js", "level": 0 },
+        { "skillId": 13, "name": "Spring Boot", "level": 0 },
+        { "skillId": 14, "name": "Django", "level": 0 },
+        { "skillId": 15, "name": "Ruby on Rails", "level": 0 },
+        { "skillId": 16, "name": "Flutter", "level": 0 },
+        { "skillId": 17, "name": "React Native", "level": 0 },
+        { "skillId": 18, "name": "MySQL", "level": 0 },
+        { "skillId": 19, "name": "PostgreSQL", "level": 0 },
+        { "skillId": 20, "name": "MongoDB", "level": 0 },
+        { "skillId": 21, "name": "Redis", "level": 0 },
+        { "skillId": 22, "name": "Jenkins", "level": 0 },
+        { "skillId": 23, "name": "GitHub Actions", "level": 0 },
+        { "skillId": 24, "name": "GitLab CI", "level": 0 },
+        { "skillId": 25, "name": "Docker", "level": 0 },
+        { "skillId": 26, "name": "Kubernetes", "level": 0 },
+        { "skillId": 27, "name": "Helm", "level": 0 },
+        { "skillId": 28, "name": "Terraform", "level": 0 },
+        { "skillId": 29, "name": "Ansible", "level": 0 },
+        { "skillId": 30, "name": "Pulumi", "level": 0 },
+        { "skillId": 31, "name": "TensorFlow", "level": 0 },
+        { "skillId": 32, "name": "PyTorch", "level": 0 },
+        { "skillId": 33, "name": "GraphQL", "level": 0 },
+        { "skillId": 34, "name": "REST API", "level": 0 },
+        { "skillId": 35, "name": "WebAssembly", "level": 0 },
+        { "skillId": 36, "name": "Serverless (Lambda等)", "level": 0 },
+        { "skillId": 37, "name": "Kafka", "level": 0 },
+        { "skillId": 38, "name": "Elasticsearch", "level": 0 }
+      ])
+
+        
+skills.value = JSON.parse(localStorage.getItem("staffSkillRequestList"))
 const certs = ref([
   { name: "基本情報技術者試験", date: "" },
   { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "" }
@@ -205,10 +235,12 @@ async function onSave() {
           "teamsId":form.value.teams,
           "photoPath":form.value.photo,
           "selfPr":form.value.selfPR,
+          "staffBasicInfoStaus":localStorage.getItem("staffBasicInfoStaus") ,
           "birthday":form.value.dob,
           "gender":form.value.gender,
-          "address":form.value.address
-          //"staffSkilMap":form.value.dob,
+          "address":form.value.address,
+          "education":form.value.education,
+          "staffSkillRequestList":skills.value,
           //"staffCategoryMap":form.value.dob,
           
           //"staffProjectMap":form.value.dob
@@ -230,9 +262,13 @@ async function onSave() {
         localStorage.setItem("slackId", data.slackId); 
         localStorage.setItem("teamsId", data.teamsId); 
         localStorage.setItem("selfPr", data.selfPr); 
+        localStorage.setItem("staffBasicInfoStaus", "1"); 
         localStorage.setItem("birthday", data.birthday); 
         localStorage.setItem("gender", data.gender); 
         localStorage.setItem("address", data.address); 
+        localStorage.setItem("education", data.education); 
+        localStorage.setItem("staffSkillRequestList", JSON.stringify(skills.value));
+
         
       } catch (error) {
         console.error("请求员工信息失败:", error);

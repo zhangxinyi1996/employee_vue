@@ -39,7 +39,7 @@
         <ul class="skills-list">
           <li
             v-for="skill in skills"
-            :key="skill.name"
+            :key="skill.skillId"
             class="skill-item"
           >
             {{ skill.name }}
@@ -82,6 +82,7 @@
 
 <script>
 import request from '../utils/request'
+//import { ref } from 'vue'
 export default {
   name: "EmployeeInfoShow",
   data() {
@@ -105,47 +106,49 @@ export default {
         "Slack ID": "",
         "Teams ID": "",
       },
-      skills: [
-        { name: "Java", level: 6 },
-        { name: "Python", level: 5 },
-        { name: "JavaScript", level: 7 },
-        { name: "TypeScript", level: 6 },
-        { name: "AWS", level: 6 },
-        { name: "Azure", level: 4 },
-        { name: "GCP", level: 3 },
-        { name: "OpenStack", level: 2 },
-        { name: "React", level: 6 },
-        { name: "Vue.js", level: 5 },
-        { name: "Angular", level: 3 },
-        { name: "Svelte", level: 2 },
-        { name: "Node.js", level: 5 },
-        { name: "Spring Boot", level: 5 },
-        { name: "Django", level: 3 },
-        { name: "Ruby on Rails", level: 2 },
-        { name: "Flutter", level: 3 },
-        { name: "React Native", level: 3 },
-        { name: "MySQL", level: 7 },
-        { name: "PostgreSQL", level: 6 },
-        { name: "MongoDB", level: 5 },
-        { name: "Redis", level: 4 },
-        { name: "Jenkins", level: 5 },
-        { name: "GitHub Actions", level: 5 },
-        { name: "GitLab CI", level: 4 },
-        { name: "Docker", level: 6 },
-        { name: "Kubernetes", level: 5 },
-        { name: "Helm", level: 4 },
-        { name: "Terraform", level: 4 },
-        { name: "Ansible", level: 3 },
-        { name: "Pulumi", level: 2 },
-        { name: "TensorFlow", level: 4 },
-        { name: "PyTorch", level: 3 },
-        { name: "GraphQL", level: 4 },
-        { name: "REST API", level: 7 },
-        { name: "WebAssembly", level: 2 },
-        { name: "Serverless (Lambda等)", level: 4 },
-        { name: "Kafka", level: 3 },
-        { name: "Elasticsearch", level: 4 },
-      ],
+      skills : ([        
+        { "skillId": 0, "name": "Java", "level": 1 },
+        { "skillId": 1, "name": "Python", "level": 2 },
+        { "skillId": 2, "name": "JavaScript", "level": 0 },
+        { "skillId": 3, "name": "TypeScript", "level": 0 },
+        { "skillId": 4, "name": "AWS", "level": 0 },
+        { "skillId": 5, "name": "Azure", "level": 0 },
+        { "skillId": 6, "name": "GCP", "level": 0 },
+        { "skillId": 7, "name": "OpenStack", "level": 0 },
+        { "skillId": 8, "name": "React", "level": 0 },
+        { "skillId": 9,  "name": "Vue.js", "level": 0 },
+        { "skillId": 10, "name": "Angular", "level": 0 },
+        { "skillId": 11, "name": "Svelte", "level": 0 },
+        { "skillId": 12, "name": "Node.js", "level": 0 },
+        { "skillId": 13, "name": "Spring Boot", "level": 0 },
+        { "skillId": 14, "name": "Django", "level": 0 },
+        { "skillId": 15, "name": "Ruby on Rails", "level": 0 },
+        { "skillId": 16, "name": "Flutter", "level": 0 },
+        { "skillId": 17, "name": "React Native", "level": 0 },
+        { "skillId": 18, "name": "MySQL", "level": 0 },
+        { "skillId": 19, "name": "PostgreSQL", "level": 0 },
+        { "skillId": 20, "name": "MongoDB", "level": 0 },
+        { "skillId": 21, "name": "Redis", "level": 0 },
+        { "skillId": 22, "name": "Jenkins", "level": 0 },
+        { "skillId": 23, "name": "GitHub Actions", "level": 0 },
+        { "skillId": 24, "name": "GitLab CI", "level": 0 },
+        { "skillId": 25, "name": "Docker", "level": 0 },
+        { "skillId": 26, "name": "Kubernetes", "level": 0 },
+        { "skillId": 27, "name": "Helm", "level": 0 },
+        { "skillId": 28, "name": "Terraform", "level": 0 },
+        { "skillId": 29, "name": "Ansible", "level": 0 },
+        { "skillId": 30, "name": "Pulumi", "level": 0 },
+        { "skillId": 31, "name": "TensorFlow", "level": 0 },
+        { "skillId": 32, "name": "PyTorch", "level": 0 },
+        { "skillId": 33, "name": "GraphQL", "level": 0 },
+        { "skillId": 34, "name": "REST API", "level": 0 },
+        { "skillId": 35, "name": "WebAssembly", "level": 0 },
+        { "skillId": 36, "name": "Serverless (Lambda等)", "level": 0 },
+        { "skillId": 37, "name": "Kafka", "level": 0 },
+        { "skillId": 38, "name": "Elasticsearch", "level": 0 }
+
+
+      ]),
       certifications: [
         { name: "基本情報技術者試験", date: "2012年6月" },
         { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "2021年11月" },
@@ -191,9 +194,13 @@ export default {
         localStorage.setItem("slackId", apiData.slackId) || ''; 
         localStorage.setItem("teamsId", apiData.teamsId || ''); 
         localStorage.setItem("selfPr", apiData.selfPr || ''); 
+        localStorage.setItem("staffBasicInfoStaus", apiData.staffBasicInfoStaus || ''); 
         localStorage.setItem("birthday", apiData.birthday || ''); 
         localStorage.setItem("gender", apiData.gender || ''); 
         localStorage.setItem("address", apiData.address || ''); 
+        localStorage.setItem("education", apiData.education || ''); 
+        localStorage.setItem("staffSkillRequestList", JSON.stringify(apiData.staffSkillRequestList) || ''); 
+
       } catch (error) {
         console.error("请求员工信息失败:", error);
         // 可以根据需要处理错误，例如显示错误消息
@@ -209,7 +216,7 @@ export default {
           "社員番号": data.employeeId || "",
           "メールアドレス": data.email || "",
           "電話番号": data.phoneNo || "",
-          "生年月日": data.birthDate || "", // 假设API返回的字段名是birthDate
+          "生年月日": data.birthday || "", 
           "性別": data.gender || "",
           "住所": data.address || "",
           "最終学歴": data.education || "",
@@ -218,13 +225,14 @@ export default {
           "役職": data.position || "",
           "勤務形態": data.employmentType || "",
           "直属上司": data.managerName || "",
-          "緊急連絡先": data.emergencyContact || "",
+          "緊急連絡先": data.emergencyTel || "",
           "Slack ID": data.slackId || "",
           "Teams ID": data.teamsId || "",
         };
         // 同时更新照片路径
         this.photo = data.photoPath || "images/face.jpg";
-        this.selfPR = data.selfPr || "未登録";
+        this.selfPR = data.selfPr || "";
+        this.skills = data.staffSkillRequestList  || this.skills;
       }
     }
   }
