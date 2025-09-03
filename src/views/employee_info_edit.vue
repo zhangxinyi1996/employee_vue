@@ -73,8 +73,8 @@
           <h2>資格</h2>
           <div class="cert-list-edit">
             <div v-for="(cert, idx) in certs" :key="idx" class="cert-input">
-              <input type="text" v-model="cert.name" placeholder="資格名" />
-              <input type="date" v-model="cert.date" />
+              <input type="text" v-model="cert.categoryName" placeholder="資格名" />
+              <input type="date" v-model="cert.getYmd" />
               <button type="button" @click="removeCert(idx)">削除</button>
             </div>
             <button type="button" @click="addCert">資格追加</button>
@@ -86,8 +86,11 @@
           <h2>プロジェクト経験</h2>
           <div class="project-list-edit">
             <div v-for="(project, idx) in projects" :key="idx" class="project-input">
-              <input type="text" v-model="project.name" placeholder="プロジェクト名" />
-              <button type="button" @click="removeProject(idx)">削除</button>
+              <input type="date" v-model="project.projectStart" class="short-input" /> 
+              <input type="date" v-model="project.projectEnd" />
+              <input type="text" v-model="project.projectName" placeholder="プロジェクト名" />
+              <input type="text" v-model="project.projectRole" placeholder="役割" />
+           <button type="button" @click="removeProject(idx)">削除</button>
             </div>
             <button type="button" @click="addProject">プロジェクト追加</button>
           </div>
@@ -129,7 +132,7 @@ const form = ref({
   dob: localStorage.getItem("birthday") || '',
   gender: localStorage.getItem("gender")|| '',
   address: localStorage.getItem("address") || '',
-  education: localStorage.getItem("name") || '',
+  education: localStorage.getItem("education") || '',
   joined: localStorage.getItem("hireDate")|| '',
   department:localStorage.getItem("departmentName") || '',
   position: localStorage.getItem("position") || '',
@@ -187,15 +190,18 @@ const skills = ref([
 
         
 skills.value = JSON.parse(localStorage.getItem("staffSkillRequestList"))
+
 const certs = ref([
-  { name: "基本情報技術者試験", date: "" },
-  { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "" }
+  { categoryName: "", getYmd: "" },
 ])
 
+certs.value = JSON.parse(localStorage.getItem("staffCategoryRequestList")) || certs.value;
+
 const projects = ref([
-  { name: "社内基幹システムの刷新プロジェクト" },
-  { name: "AWSクラウド移行プロジェクト" }
+ { projectStart: "", projectEnd:"", projectName: "" , projectRole: ""},
 ])
+
+projects.value = JSON.parse(localStorage.getItem("staffProjectRequestList")) || projects.value;
 
 function onFileChange(e) {
   const file = e.target.files[0]
@@ -206,10 +212,10 @@ function onFileChange(e) {
   }
 }
 
-function addCert() { certs.value.push({ name: '', date: '' }) }
+function addCert() { certs.value.push({ categoryName: '', getYmd: '' }) }
 function removeCert(idx) { certs.value.splice(idx, 1) }
 
-function addProject() { projects.value.push({ name: '' }) }
+function addProject() { projects.value.push({ projectStart: "",projectEnd:"",projectName: "" ,projectRole: "" }) }
 function removeProject(idx) { projects.value.splice(idx, 1) }
 
 async function onSave() {
@@ -241,9 +247,8 @@ async function onSave() {
           "address":form.value.address,
           "education":form.value.education,
           "staffSkillRequestList":skills.value,
-          //"staffCategoryMap":form.value.dob,
-          
-          //"staffProjectMap":form.value.dob
+          "staffCategoryRequestList":certs.value,
+          "staffProjectRequestList":projects.value,
         }
         await request.post("/employee/edit", data);
         // 调用方法处理并更新数据        
@@ -268,8 +273,9 @@ async function onSave() {
         localStorage.setItem("address", data.address); 
         localStorage.setItem("education", data.education); 
         localStorage.setItem("staffSkillRequestList", JSON.stringify(skills.value));
+        localStorage.setItem("staffCategoryRequestList", JSON.stringify(certs.value) ); 
+        localStorage.setItem("staffProjectRequestList", JSON.stringify(projects.value) ); 
 
-        
       } catch (error) {
         console.error("请求员工信息失败:", error);
         // 可以根据需要处理错误，例如显示错误消息

@@ -53,8 +53,8 @@
         <h2>資格</h2>
         <ul class="cert-list">
           <li v-for="cert in certifications" :key="cert.name">
-            <span class="cert-name" :title="cert.name">{{ cert.name }}</span>
-            <span class="cert-date">{{ cert.date }}</span>
+            <span class="cert-name" :title="cert.name">{{ cert.categoryName }}</span>
+            <span class="cert-date">{{ cert.getYmd }}</span>
           </li>
         </ul>
       </section>
@@ -63,7 +63,9 @@
       <section>
         <h2>プロジェクト経験</h2>
         <ul class="project-list">
-          <li v-for="(project, index) in projects" :key="index">{{ project }}</li>
+          <li v-for="(project, index) in projects" :key="index">
+            {{ project.projectName }}（{{ project.projectStart }}～{{ project.projectEnd }}、{{ project.projectRole }}）
+          </li>
         </ul>
       </section>
 
@@ -150,15 +152,11 @@ export default {
 
       ]),
       certifications: [
-        { name: "基本情報技術者試験", date: "2012年6月" },
-        { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "2021年11月" },
-        { name: "Oracle Certified Java Programmer", date: "2018年3月" },
+        { categoryName: "", getYmd: "" }
       ],
  
       projects: [
-        "社内基幹システムの刷新プロジェクト（リーダー、2019-2021）",
-        "AWSクラウド移行プロジェクト（メンバー、2022）",
-        "新規Webサービス開発（フロントエンド担当、2023）",
+        { projectStart: "", projectEnd:"", projectName: "" , projectRole: ""},
       ],
       selfPR: "",
     };
@@ -199,7 +197,9 @@ export default {
         localStorage.setItem("gender", apiData.gender || ''); 
         localStorage.setItem("address", apiData.address || ''); 
         localStorage.setItem("education", apiData.education || ''); 
-        localStorage.setItem("staffSkillRequestList", JSON.stringify(apiData.staffSkillRequestList) || ''); 
+        localStorage.setItem("staffSkillRequestList", JSON.stringify(apiData.staffSkillRequestList)); 
+        localStorage.setItem("staffCategoryRequestList", JSON.stringify(this.certifications)); 
+        localStorage.setItem("staffProjectRequestList", JSON.stringify(this.projects)); 
 
       } catch (error) {
         console.error("请求员工信息失败:", error);
@@ -233,6 +233,10 @@ export default {
         this.photo = data.photoPath || "images/face.jpg";
         this.selfPR = data.selfPr || "";
         this.skills = data.staffSkillRequestList  || this.skills;
+        const certList = data.staffCategoryRequestList;
+        this.certifications = certList && certList.length > 0 ? certList : this.certifications ;
+        const projectsList = data.staffProjectRequestList;
+        this.projects = projectsList && projectsList.length > 0 ? projectsList : this.projects ;
       }
     }
   }
