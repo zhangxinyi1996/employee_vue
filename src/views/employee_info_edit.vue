@@ -21,10 +21,9 @@
       <form @submit.prevent="onSave" enctype="multipart/form-data">
         <!-- 写真 -->
         <section class="form-photo">
-          <img :src="photoPreview || form.photo" alt="従業員写真" class="photo" />
+          <img :src="photoPreview || form.photo || defaultPhoto" alt="従業員写真" class="photo" />
           <input type="file" @change="onFileChange" accept="image/*" />
         </section>
-
         <!-- 基本情報 -->
         <section class="form-section">
           <h2>基本情報</h2>
@@ -59,7 +58,7 @@
         <section class="form-section">
           <h2>技術スキル（0～7）</h2>
           <div class="skills-list-edit">
-            <div v-for="(skill, index) in skills" :key="index" class="skill-input">
+            <div v-for="skill in skills" :key="skill.skillId" class="skill-input">
               <input type="text" v-model="skill.name" readonly />
               <select v-model.number="skill.level">
                 <option v-for="n in 8" :key="n-1" :value="n-1">{{ n-1 }}</option>
@@ -73,8 +72,8 @@
           <h2>資格</h2>
           <div class="cert-list-edit">
             <div v-for="(cert, idx) in certs" :key="idx" class="cert-input">
-              <input type="text" v-model="cert.name" placeholder="資格名" />
-              <input type="date" v-model="cert.date" />
+              <input type="text" v-model="cert.categoryName" placeholder="資格名" />
+              <input type="date" v-model="cert.getYmd" />
               <button type="button" @click="removeCert(idx)">削除</button>
             </div>
             <button type="button" @click="addCert">資格追加</button>
@@ -86,8 +85,11 @@
           <h2>プロジェクト経験</h2>
           <div class="project-list-edit">
             <div v-for="(project, idx) in projects" :key="idx" class="project-input">
-              <input type="text" v-model="project.name" placeholder="プロジェクト名" />
-              <button type="button" @click="removeProject(idx)">削除</button>
+              <input type="date" v-model="project.projectStart" class="short-input" /> 
+              <input type="date" v-model="project.projectEnd" />
+              <input type="text" v-model="project.projectName" placeholder="プロジェクト名" />
+              <input type="text" v-model="project.projectRole" placeholder="役割" />
+           <button type="button" @click="removeProject(idx)">削除</button>
             </div>
             <button type="button" @click="addProject">プロジェクト追加</button>
           </div>
@@ -112,6 +114,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import request from '../utils/request'
 
 const router = useRouter()
 
@@ -126,72 +129,198 @@ function logout() {
 const defaultPhoto = '/images/face.jpg'
 const photoPreview = ref('')
 
+
 const form = ref({
-  photo: defaultPhoto,
-  name: '山田 太郎',
-  employeeId: '20250123',
-  email: 'yamada.taro@example.com',
-  phone: '080-1234-5678',
-  dob: '1987-06-15',
-  gender: '男性',
-  address: '東京都港区芝浦3-2-16 A-PLACE田町イースト 6F',
-  education: '東京工業大学 工学部 情報工学科 卒業（2010年3月）',
-  joined: '2015-04-01',
-  department: '開発部',
-  position: 'シニアエンジニア',
-  workStyle: '正社員',
-  manager: '佐藤 一郎',
-  emergency: '090-9876-5432（妻）',
-  slack: '@taro.yamada',
-  teams: 'taro.yamada@hi-think.co.jp',
-  selfPR: '15年以上のシステム開発経験があります…'
+  photo: localStorage.getItem("photo") || defaultPhoto,
+  photoFile: null,
+  name:  localStorage.getItem("name") || '',
+  employeeId: localStorage.getItem("employeeId") || '',
+  email: localStorage.getItem("email") || '',
+  phone: localStorage.getItem("phoneNo") || '',
+  dob: localStorage.getItem("birthday") || '',
+  gender: localStorage.getItem("gender")|| '',
+  address: localStorage.getItem("address") || '',
+  education: localStorage.getItem("education") || '',
+  joined: localStorage.getItem("hireDate")|| '',
+  department:localStorage.getItem("departmentName") || '',
+  position: localStorage.getItem("position") || '',
+  workStyle: localStorage.getItem("employmentType") || '',
+  manager: localStorage.getItem("managerName") || '',
+  emergency: localStorage.getItem("emergencyTel") || '',
+  slack: localStorage.getItem("slackId") || '',
+  teams: localStorage.getItem("teamsId")|| '',
+  selfPR: localStorage.getItem("selfPr")|| ''
+
 })
 
 const skills = ref([
-  { name: "Java", level: 0 }, { name: "Python", level: 0 }, { name: "JavaScript", level: 0 },
-  { name: "TypeScript", level: 0 }, { name: "AWS", level: 0 }, { name: "Azure", level: 0 },
-  { name: "GCP", level: 0 }, { name: "OpenStack", level: 0 }, { name: "React", level: 0 },
-  { name: "Vue.js", level: 0 }, { name: "Angular", level: 0 }, { name: "Svelte", level: 0 },
-  { name: "Node.js", level: 0 }, { name: "Spring Boot", level: 0 }, { name: "Django", level: 0 },
-  { name: "Ruby on Rails", level: 0 }, { name: "Flutter", level: 0 }, { name: "React Native", level: 0 },
-  { name: "MySQL", level: 0 }, { name: "PostgreSQL", level: 0 }, { name: "MongoDB", level: 0 },
-  { name: "Redis", level: 0 }, { name: "Jenkins", level: 0 }, { name: "GitHub Actions", level: 0 },
-  { name: "GitLab CI", level: 0 }, { name: "Docker", level: 0 }, { name: "Kubernetes", level: 0 },
-  { name: "Helm", level: 0 }, { name: "Terraform", level: 0 }, { name: "Ansible", level: 0 },
-  { name: "Pulumi", level: 0 }, { name: "TensorFlow", level: 0 }, { name: "PyTorch", level: 0 },
-  { name: "GraphQL", level: 0 }, { name: "REST API", level: 0 }, { name: "WebAssembly", level: 0 },
-  { name: "Serverless (Lambda等)", level: 0 }, { name: "Kafka", level: 0 }, { name: "Elasticsearch", level: 0 }
-])
+
+        { "skillId": 0, "name": "Java", "level": 1 },
+        { "skillId": 1, "name": "Python", "level": 2 },
+        { "skillId": 2, "name": "JavaScript", "level": 0 },
+        { "skillId": 3, "name": "TypeScript", "level": 0 },
+        { "skillId": 4, "name": "AWS", "level": 0 },
+        { "skillId": 5, "name": "Azure", "level": 0 },
+        { "skillId": 6, "name": "GCP", "level": 0 },
+        { "skillId": 7, "name": "OpenStack", "level": 0 },
+        { "skillId": 8, "name": "React", "level": 0 },
+        { "skillId": 9,  "name": "Vue.js", "level": 0 },
+        { "skillId": 10, "name": "Angular", "level": 0 },
+        { "skillId": 11, "name": "Svelte", "level": 0 },
+        { "skillId": 12, "name": "Node.js", "level": 0 },
+        { "skillId": 13, "name": "Spring Boot", "level": 0 },
+        { "skillId": 14, "name": "Django", "level": 0 },
+        { "skillId": 15, "name": "Ruby on Rails", "level": 0 },
+        { "skillId": 16, "name": "Flutter", "level": 0 },
+        { "skillId": 17, "name": "React Native", "level": 0 },
+        { "skillId": 18, "name": "MySQL", "level": 0 },
+        { "skillId": 19, "name": "PostgreSQL", "level": 0 },
+        { "skillId": 20, "name": "MongoDB", "level": 0 },
+        { "skillId": 21, "name": "Redis", "level": 0 },
+        { "skillId": 22, "name": "Jenkins", "level": 0 },
+        { "skillId": 23, "name": "GitHub Actions", "level": 0 },
+        { "skillId": 24, "name": "GitLab CI", "level": 0 },
+        { "skillId": 25, "name": "Docker", "level": 0 },
+        { "skillId": 26, "name": "Kubernetes", "level": 0 },
+        { "skillId": 27, "name": "Helm", "level": 0 },
+        { "skillId": 28, "name": "Terraform", "level": 0 },
+        { "skillId": 29, "name": "Ansible", "level": 0 },
+        { "skillId": 30, "name": "Pulumi", "level": 0 },
+        { "skillId": 31, "name": "TensorFlow", "level": 0 },
+        { "skillId": 32, "name": "PyTorch", "level": 0 },
+        { "skillId": 33, "name": "GraphQL", "level": 0 },
+        { "skillId": 34, "name": "REST API", "level": 0 },
+        { "skillId": 35, "name": "WebAssembly", "level": 0 },
+        { "skillId": 36, "name": "Serverless (Lambda等)", "level": 0 },
+        { "skillId": 37, "name": "Kafka", "level": 0 },
+        { "skillId": 38, "name": "Elasticsearch", "level": 0 }
+      ])
+
+        
+skills.value = JSON.parse(localStorage.getItem("staffSkillRequestList"))
 
 const certs = ref([
-  { name: "基本情報技術者試験", date: "" },
-  { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "" }
+  { categoryName: "", getYmd: "" },
 ])
+
+certs.value = JSON.parse(localStorage.getItem("staffCategoryRequestList")) || certs.value;
 
 const projects = ref([
-  { name: "社内基幹システムの刷新プロジェクト" },
-  { name: "AWSクラウド移行プロジェクト" }
+ { projectStart: "", projectEnd:"", projectName: "" , projectRole: ""},
 ])
 
+projects.value = JSON.parse(localStorage.getItem("staffProjectRequestList")) || projects.value;
+
+
 function onFileChange(e) {
-  const file = e.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (event) => { photoPreview.value = event.target.result }
-    reader.readAsDataURL(file)
+  const photoFile = e.target.files[0]
+  if (!photoFile) return
+
+  // 预览
+  const reader = new FileReader()
+  reader.onload = (event) => { photoPreview.value = event.target.result }
+  reader.readAsDataURL(photoFile)
+  
+  // ファイルの保存
+  form.value.photoFile = photoFile
+
+}
+
+function addCert() { certs.value.push({ categoryName: '', getYmd: '' }) }
+function removeCert(idx) { certs.value.splice(idx, 1) }
+
+function addProject() { projects.value.push({ projectStart: "",projectEnd:"",projectName: "" ,projectRole: "" }) }
+function removeProject(idx) { projects.value.splice(idx, 1) }
+
+async function onSave() {
+  if (confirm('編集した内容を保存してもよろしいですか？')) {
+
+   try {
+        // ファイルのアップロード処理のため FormData を使う
+        const formData = new FormData()
+        formData.append("photoFile", form.value.photoFile)
+
+        // その他項目の追加
+        formData.append( "employeeStatus",localStorage.getItem("employeeStatus") )
+        formData.append( "id",localStorage.getItem("employeeId") )
+        formData.append("departmentName",form.value.department )
+        formData.append("name",form.value.name )
+        formData.append("email",form.value.email )
+        formData.append("phoneNo",form.value.phone )
+        formData.append("hireDate",form.value.joined )
+        formData.append("position",form.value.position )
+        formData.append("employmentType",form.value.workStyle )
+        formData.append("managerName",form.value.manager )
+        formData.append("emergencyTel",form.value.emergency )
+        formData.append("slackId",form.value.slack )
+        formData.append("teamsId",form.value.teams )
+        formData.append("photoPath",form.value.photo )
+        formData.append("selfPr",form.value.selfPR )
+        formData.append("staffBasicInfoStaus",localStorage.getItem("staffBasicInfoStaus") )
+        formData.append("birthday",form.value.dob )
+        formData.append("gender",form.value.gender )
+        formData.append("address",form.value.address )
+        formData.append("education",form.value.education )
+        //formData.append("staffSkillRequestList",skills.value )
+        appendListToFormData(formData, skills.value, "staffSkillRequestList");
+        //formData.append("staffCategoryRequestList",certs.value )
+        appendListToFormData(formData, certs.value, "staffCategoryRequestList");
+        //formData.append("staffProjectRequestList",projects.value )
+        appendListToFormData(formData, projects.value, "staffProjectRequestList");
+
+
+        await request.post("/employee/edit",formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        })
+        .then(res => {
+          console.log("保存正常終了", res.data)
+          localStorage.setItem("photo", res.data.path); 
+        })
+        .catch(err => {
+          console.error("保存失敗終了", err)
+        })
+    
+        // 保存员工情報到 localStorage
+        localStorage.setItem("employeeStatus", "1"); 
+        localStorage.setItem("employeeId", formData.id); 
+        localStorage.setItem("departmentName", formData.departmentName); 
+        localStorage.setItem("name", formData.name); 
+        localStorage.setItem("email", formData.email); 
+        localStorage.setItem("phoneNo", formData.phoneNo); 
+        localStorage.setItem("hireDate", formData.hireDate); 
+        localStorage.setItem("position", formData.position); 
+        localStorage.setItem("employmentType", formData.employmentType); 
+        localStorage.setItem("managerName", formData.managerName); 
+        localStorage.setItem("emergencyTel", formData.emergencyTel); 
+        localStorage.setItem("slackId", formData.slackId); 
+        localStorage.setItem("teamsId", formData.teamsId); 
+        localStorage.setItem("selfPr", formData.selfPr); 
+        localStorage.setItem("staffBasicInfoStaus", "1"); 
+        localStorage.setItem("birthday", formData.birthday); 
+        localStorage.setItem("gender", formData.gender); 
+        localStorage.setItem("address", formData.address); 
+        localStorage.setItem("education", formData.education); 
+        localStorage.setItem("staffSkillRequestList", JSON.stringify(skills.value));
+        localStorage.setItem("staffCategoryRequestList", JSON.stringify(certs.value) ); 
+        localStorage.setItem("staffProjectRequestList", JSON.stringify(projects.value) ); 
+
+      } catch (error) {
+        console.error("请求员工信息失败:", error);
+        // 可以根据需要处理错误，例如显示错误消息
+      }
+    
+    
+    router.push('/employee_infoshow')
   }
 }
 
-function addCert() { certs.value.push({ name: '', date: '' }) }
-function removeCert(idx) { certs.value.splice(idx, 1) }
-
-function addProject() { projects.value.push({ name: '' }) }
-function removeProject(idx) { projects.value.splice(idx, 1) }
-
-function onSave() {
-  if (confirm('編集した内容を保存してもよろしいですか？')) {
-    router.push('/employee_infoshow')
-  }
+function appendListToFormData(fd, list, listName) {
+  list.forEach((obj, i) => {
+    Object.entries(obj).forEach(([k, v]) => {
+      const key = `${listName}[${i}].${k}`;
+      fd.append(key, v ?? "");
+    });
+  });
 }
 function onCancel() { router.push('/employee_infoshow') }
 </script>
@@ -417,4 +546,6 @@ button:hover {
     align-items: stretch;
   }
 }
+
+
 </style>

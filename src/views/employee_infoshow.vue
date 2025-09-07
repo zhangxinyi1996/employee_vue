@@ -18,7 +18,7 @@
 
       <!-- 写真 -->
       <section>
-        <img src="images/face.jpg" alt="従業員写真" class="photo" />
+        <img :src="photo|| '/images/face.jpg'" alt="従業員写真" class="photo" />
       </section>
 
       <!-- 基本情報 -->
@@ -38,7 +38,7 @@
         <ul class="skills-list">
           <li
             v-for="skill in skills"
-            :key="skill.name"
+            :key="skill.skillId"
             class="skill-item"
           >
             {{ skill.name }}
@@ -50,10 +50,9 @@
       <!-- 資格 -->
       <section>
         <h2>資格</h2>
-        <ul class="cert-list">
+        <ul class="project-list" v-if="certifications.some(cert => cert.categoryName)">
           <li v-for="cert in certifications" :key="cert.name">
-            <span class="cert-name" :title="cert.name">{{ cert.name }}</span>
-            <span class="cert-date">{{ cert.date }}</span>
+            {{ cert.categoryName }}（{{ cert.getYmd }}）
           </li>
         </ul>
       </section>
@@ -61,8 +60,10 @@
       <!-- プロジェクト経験 -->
       <section>
         <h2>プロジェクト経験</h2>
-        <ul class="project-list">
-          <li v-for="(project, index) in projects" :key="index">{{ project }}</li>
+        <ul class="project-list" v-if="projects.some(project => project.projectName)">
+          <li v-for="(project, index) in projects" :key="index">
+            {{ project.projectName }}（{{ project.projectStart }}～{{ project.projectEnd }}、{{ project.projectRole }}）
+          </li>
         </ul>
       </section>
 
@@ -80,6 +81,8 @@
 </template>
 
 <script>
+import request from '../utils/request'
+//import { ref } from 'vue'
 export default {
   name: "EmployeeInfoShow",
   mounted() {
@@ -96,82 +99,156 @@ export default {
     return {
       photo: "images/face.jpg",
       basicInfo: {
-        "氏名": "山田 太郎",
-        "社員番号": "20250123",
-        "メールアドレス": "yamada.taro@example.com",
-        "電話番号": "080-1234-5678",
-        "生年月日": "1987年6月15日",
-        "性別": "男性",
-        "住所": "東京都港区芝浦3-2-16 A-PLACE田町イースト 6F",
-        "最終学歴": "東京工業大学 工学部 情報工学科 卒業（2010年3月）",
-        "入社年月日": "2015年4月1日",
-        "部署": "開発部",
-        "役職": "シニアエンジニア",
-        "勤務形態": "正社員",
-        "直属上司": "佐藤 一郎",
-        "緊急連絡先": "090-9876-5432（妻）",
-        "Slack ID": "@taro.yamada",
-        "Teams ID": "taro.yamada@hi-think.co.jp",
+        "氏名": "",
+        "社員番号": "",
+        "メールアドレス": "",
+        "電話番号": "",
+        "生年月日": "",
+        "性別": "",
+        "住所": "",
+        "最終学歴": "",
+        "入社年月日": "",
+        "部署": "",
+        "役職": "",
+        "勤務形態": "",
+        "直属上司": "",
+        "緊急連絡先": "",
+        "Slack ID": "",
+        "Teams ID": "",
       },
-      skills: [
-        { name: "Java", level: 6 },
-        { name: "Python", level: 5 },
-        { name: "JavaScript", level: 7 },
-        { name: "TypeScript", level: 6 },
-        { name: "AWS", level: 6 },
-        { name: "Azure", level: 4 },
-        { name: "GCP", level: 3 },
-        { name: "OpenStack", level: 2 },
-        { name: "React", level: 6 },
-        { name: "Vue.js", level: 5 },
-        { name: "Angular", level: 3 },
-        { name: "Svelte", level: 2 },
-        { name: "Node.js", level: 5 },
-        { name: "Spring Boot", level: 5 },
-        { name: "Django", level: 3 },
-        { name: "Ruby on Rails", level: 2 },
-        { name: "Flutter", level: 3 },
-        { name: "React Native", level: 3 },
-        { name: "MySQL", level: 7 },
-        { name: "PostgreSQL", level: 6 },
-        { name: "MongoDB", level: 5 },
-        { name: "Redis", level: 4 },
-        { name: "Jenkins", level: 5 },
-        { name: "GitHub Actions", level: 5 },
-        { name: "GitLab CI", level: 4 },
-        { name: "Docker", level: 6 },
-        { name: "Kubernetes", level: 5 },
-        { name: "Helm", level: 4 },
-        { name: "Terraform", level: 4 },
-        { name: "Ansible", level: 3 },
-        { name: "Pulumi", level: 2 },
-        { name: "TensorFlow", level: 4 },
-        { name: "PyTorch", level: 3 },
-        { name: "GraphQL", level: 4 },
-        { name: "REST API", level: 7 },
-        { name: "WebAssembly", level: 2 },
-        { name: "Serverless (Lambda等)", level: 4 },
-        { name: "Kafka", level: 3 },
-        { name: "Elasticsearch", level: 4 },
-      ],
+      skills : ([        
+        { "skillId": 0, "name": "Java", "level": 1 },
+        { "skillId": 1, "name": "Python", "level": 2 },
+        { "skillId": 2, "name": "JavaScript", "level": 0 },
+        { "skillId": 3, "name": "TypeScript", "level": 0 },
+        { "skillId": 4, "name": "AWS", "level": 0 },
+        { "skillId": 5, "name": "Azure", "level": 0 },
+        { "skillId": 6, "name": "GCP", "level": 0 },
+        { "skillId": 7, "name": "OpenStack", "level": 0 },
+        { "skillId": 8, "name": "React", "level": 0 },
+        { "skillId": 9,  "name": "Vue.js", "level": 0 },
+        { "skillId": 10, "name": "Angular", "level": 0 },
+        { "skillId": 11, "name": "Svelte", "level": 0 },
+        { "skillId": 12, "name": "Node.js", "level": 0 },
+        { "skillId": 13, "name": "Spring Boot", "level": 0 },
+        { "skillId": 14, "name": "Django", "level": 0 },
+        { "skillId": 15, "name": "Ruby on Rails", "level": 0 },
+        { "skillId": 16, "name": "Flutter", "level": 0 },
+        { "skillId": 17, "name": "React Native", "level": 0 },
+        { "skillId": 18, "name": "MySQL", "level": 0 },
+        { "skillId": 19, "name": "PostgreSQL", "level": 0 },
+        { "skillId": 20, "name": "MongoDB", "level": 0 },
+        { "skillId": 21, "name": "Redis", "level": 0 },
+        { "skillId": 22, "name": "Jenkins", "level": 0 },
+        { "skillId": 23, "name": "GitHub Actions", "level": 0 },
+        { "skillId": 24, "name": "GitLab CI", "level": 0 },
+        { "skillId": 25, "name": "Docker", "level": 0 },
+        { "skillId": 26, "name": "Kubernetes", "level": 0 },
+        { "skillId": 27, "name": "Helm", "level": 0 },
+        { "skillId": 28, "name": "Terraform", "level": 0 },
+        { "skillId": 29, "name": "Ansible", "level": 0 },
+        { "skillId": 30, "name": "Pulumi", "level": 0 },
+        { "skillId": 31, "name": "TensorFlow", "level": 0 },
+        { "skillId": 32, "name": "PyTorch", "level": 0 },
+        { "skillId": 33, "name": "GraphQL", "level": 0 },
+        { "skillId": 34, "name": "REST API", "level": 0 },
+        { "skillId": 35, "name": "WebAssembly", "level": 0 },
+        { "skillId": 36, "name": "Serverless (Lambda等)", "level": 0 },
+        { "skillId": 37, "name": "Kafka", "level": 0 },
+        { "skillId": 38, "name": "Elasticsearch", "level": 0 }
+
+
+      ]),
       certifications: [
-        { name: "基本情報技術者試験", date: "2012年6月" },
-        { name: "AWS認定ソリューションアーキテクト – アソシエイト", date: "2021年11月" },
-        { name: "Oracle Certified Java Programmer", date: "2018年3月" },
+        { categoryName: "", getYmd: "" }
       ],
  
       projects: [
-        "社内基幹システムの刷新プロジェクト（リーダー、2019-2021）",
-        "AWSクラウド移行プロジェクト（メンバー、2022）",
-        "新規Webサービス開発（フロントエンド担当、2023）",
+        { projectStart: "", projectEnd:"", projectName: "" , projectRole: ""},
       ],
-      selfPR: `15年以上のシステム開発経験があり、JavaとJavaScriptを中心に幅広い技術を扱えます。<br>
-      チームリーダーとしてプロジェクトマネジメント経験も豊富です。<br>
-      新しい技術を学ぶことが好きで、常に最新のトレンドをキャッチアップしています。`,
+      selfPR: "",
     };
   },
+
+  // 在组件实例创建后立即发起请求
+  async created() {
+    await this.fetchEmployeeData();
+  },
   methods: {
-    logout() {
+    // 异步获取员工数据的方法
+    async fetchEmployeeData() {
+      try {
+        // 使用 await 暂停执行，等待请求完成
+        const usernameStorage = localStorage.getItem('username') || '';
+        const apiData = await request.post("/employee/preview",{
+        username: usernameStorage
+    });
+        // 调用方法处理并更新数据
+        this.updateBasicInfo(apiData);
+        // 保存员工情報到 localStorage
+        localStorage.setItem("photo", apiData.photoPath || ''); 
+        localStorage.setItem("employeeStatus", apiData.employeeStatus || ''); 
+        localStorage.setItem("employeeId", apiData.employeeId || ''); 
+        localStorage.setItem("departmentName", apiData.DepartmentName || ''); 
+        localStorage.setItem("name", apiData.name || ''); 
+        localStorage.setItem("email", apiData.email || ''); 
+        localStorage.setItem("phoneNo", apiData.phoneNo || ''); 
+        localStorage.setItem("hireDate", apiData.hireDate || ''); 
+        localStorage.setItem("position", apiData.position || ''); 
+        localStorage.setItem("employmentType", apiData.employmentType || ''); 
+        localStorage.setItem("managerName", apiData.managerName || ''); 
+        localStorage.setItem("emergencyTel", apiData.emergencyTel || ''); 
+        localStorage.setItem("slackId", apiData.slackId) || ''; 
+        localStorage.setItem("teamsId", apiData.teamsId || ''); 
+        localStorage.setItem("selfPr", apiData.selfPr || ''); 
+        localStorage.setItem("staffBasicInfoStaus", apiData.staffBasicInfoStaus || ''); 
+        localStorage.setItem("birthday", apiData.birthday || ''); 
+        localStorage.setItem("gender", apiData.gender || ''); 
+        localStorage.setItem("address", apiData.address || ''); 
+        localStorage.setItem("education", apiData.education || ''); 
+        localStorage.setItem("staffSkillRequestList", JSON.stringify(apiData.staffSkillRequestList)); 
+        localStorage.setItem("staffCategoryRequestList", JSON.stringify(this.certifications)); 
+        localStorage.setItem("staffProjectRequestList", JSON.stringify(this.projects)); 
+
+      } catch (error) {
+        console.error("请求员工信息失败:", error);
+        // 可以根据需要处理错误，例如显示错误消息
+      }
+    },
+    
+    // 将 API 返回的数据格式化并更新到 basicInfo
+    updateBasicInfo(data) {
+      // 检查返回数据是否有效
+      if ( typeof data === 'object') {
+        this.basicInfo = {
+          "氏名": data.name || "",
+          "社員番号": data.employeeId || "",
+          "メールアドレス": data.email || "",
+          "電話番号": data.phoneNo || "",
+          "生年月日": data.birthday || "", 
+          "性別": data.gender || "",
+          "住所": data.address || "",
+          "最終学歴": data.education || "",
+          "入社年月日": data.hireDate || "",
+          "部署": data.department || "",
+          "役職": data.position || "",
+          "勤務形態": data.employmentType || "",
+          "直属上司": data.managerName || "",
+          "緊急連絡先": data.emergencyTel || "",
+          "Slack ID": data.slackId || "",
+          "Teams ID": data.teamsId || "",
+        };
+        // 同时更新照片路径
+        this.photo = data.photoPath || "images/face.jpg";
+        this.selfPR = data.selfPr || "";
+        this.skills = data.staffSkillRequestList  || this.skills;
+        const certList = data.staffCategoryRequestList;
+        this.certifications = certList && certList.length > 0 ? certList : this.certifications ;
+        const projectsList = data.staffProjectRequestList;
+        this.projects = projectsList && projectsList.length > 0 ? projectsList : this.projects ;
+      }
+    },
+       logout() {
       // デバッグ用ログ
       console.log("✅ logout() が呼ばれました");
 
@@ -187,7 +264,7 @@ export default {
       this.$router.push("/login");
     }
   }
-};
+  };
 </script>
 
 <style scoped>
@@ -408,8 +485,8 @@ ul.project-list {
 
 /* 資格部分 横並び */
 .cert-list {
-  list-style: none;
-  padding: 0;
+  list-style: disc inside;
+  padding-left: 20px;
   margin: 0;
   color: #455a86;
   font-size: 16px;
@@ -422,7 +499,7 @@ ul.project-list {
 .cert-list li {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #dde3ea;
+  /* border-bottom: 1px solid #dde3ea; */
   padding-bottom: 6px;
 }
 
