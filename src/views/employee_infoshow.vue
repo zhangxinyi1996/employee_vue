@@ -19,7 +19,7 @@
 
       <!-- 写真 -->
       <section>
-        <img src="images/face.jpg" alt="従業員写真" class="photo" />
+        <img :src="photo|| '/images/face.jpg'" alt="従業員写真" class="photo" />
       </section>
 
       <!-- 基本情報 -->
@@ -51,10 +51,9 @@
       <!-- 資格 -->
       <section>
         <h2>資格</h2>
-        <ul class="cert-list">
+        <ul class="project-list" v-if="certifications.some(cert => cert.categoryName)">
           <li v-for="cert in certifications" :key="cert.name">
-            <span class="cert-name" :title="cert.name">{{ cert.categoryName }}</span>
-            <span class="cert-date">{{ cert.getYmd }}</span>
+            {{ cert.categoryName }}（{{ cert.getYmd }}）
           </li>
         </ul>
       </section>
@@ -62,7 +61,7 @@
       <!-- プロジェクト経験 -->
       <section>
         <h2>プロジェクト経験</h2>
-        <ul class="project-list">
+        <ul class="project-list" v-if="projects.some(project => project.projectName)">
           <li v-for="(project, index) in projects" :key="index">
             {{ project.projectName }}（{{ project.projectStart }}～{{ project.projectEnd }}、{{ project.projectRole }}）
           </li>
@@ -178,6 +177,7 @@ export default {
         // 调用方法处理并更新数据
         this.updateBasicInfo(apiData);
         // 保存员工情報到 localStorage
+        localStorage.setItem("photo", apiData.photoPath || ''); 
         localStorage.setItem("employeeStatus", apiData.employeeStatus || ''); 
         localStorage.setItem("employeeId", apiData.employeeId || ''); 
         localStorage.setItem("departmentName", apiData.DepartmentName || ''); 
@@ -460,8 +460,8 @@ ul.project-list {
 
 /* 資格部分 横並び */
 .cert-list {
-  list-style: none;
-  padding: 0;
+  list-style: disc inside;
+  padding-left: 20px;
   margin: 0;
   color: #455a86;
   font-size: 16px;
@@ -474,7 +474,7 @@ ul.project-list {
 .cert-list li {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #dde3ea;
+  /* border-bottom: 1px solid #dde3ea; */
   padding-bottom: 6px;
 }
 

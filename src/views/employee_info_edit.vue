@@ -21,10 +21,9 @@
       <form @submit.prevent="onSave" enctype="multipart/form-data">
         <!-- 写真 -->
         <section class="form-photo">
-          <img :src="photoPreview || form.photo" alt="従業員写真" class="photo" />
+          <img :src="photoPreview || form.photo || defaultPhoto" alt="従業員写真" class="photo" />
           <input type="file" @change="onFileChange" accept="image/*" />
         </section>
-
         <!-- 基本情報 -->
         <section class="form-section">
           <h2>基本情報</h2>
@@ -124,7 +123,8 @@ const photoPreview = ref('')
 
 
 const form = ref({
-  photo: defaultPhoto,
+  photo: localStorage.getItem("photo") || defaultPhoto,
+  photoFile: null,
   name:  localStorage.getItem("name") || '',
   employeeId: localStorage.getItem("employeeId") || '',
   email: localStorage.getItem("email") || '',
@@ -203,13 +203,19 @@ const projects = ref([
 
 projects.value = JSON.parse(localStorage.getItem("staffProjectRequestList")) || projects.value;
 
+
 function onFileChange(e) {
-  const file = e.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (event) => { photoPreview.value = event.target.result }
-    reader.readAsDataURL(file)
-  }
+  const photoFile = e.target.files[0]
+  if (!photoFile) return
+
+  // 预览
+  const reader = new FileReader()
+  reader.onload = (event) => { photoPreview.value = event.target.result }
+  reader.readAsDataURL(photoFile)
+  
+  // ファイルの保存
+  form.value.photoFile = photoFile
+
 }
 
 function addCert() { certs.value.push({ categoryName: '', getYmd: '' }) }
@@ -222,56 +228,70 @@ async function onSave() {
   if (confirm('編集した内容を保存してもよろしいですか？')) {
 
    try {
-        // 使用 await 暂停执行，等待请求完成
-        const data = {
-          "employeeStatus":localStorage.getItem("employeeStatus") ,
-          "id":localStorage.getItem("employeeId") ,
-          "departmentName":form.value.department,
-          "name":form.value.name,
-          //"employeeLevel":form.value.employeeLevel,
-          "email":form.value.email,
-          "phoneNo":form.value.phone,
-          "hireDate":form.value.joined,
-          "position":form.value.position,
-          "employmentType":form.value.workStyle,
-          "managerName":form.value.manager,
-          //"emergencyContact":form.value.emergency,
-          "emergencyTel":form.value.emergency,
-          "slackId":form.value.slack,
-          "teamsId":form.value.teams,
-          "photoPath":form.value.photo,
-          "selfPr":form.value.selfPR,
-          "staffBasicInfoStaus":localStorage.getItem("staffBasicInfoStaus") ,
-          "birthday":form.value.dob,
-          "gender":form.value.gender,
-          "address":form.value.address,
-          "education":form.value.education,
-          "staffSkillRequestList":skills.value,
-          "staffCategoryRequestList":certs.value,
-          "staffProjectRequestList":projects.value,
-        }
-        await request.post("/employee/edit", data);
-        // 调用方法处理并更新数据        
+        // ファイルのアップロード処理のため FormData を使う
+        const formData = new FormData()
+        formData.append("photoFile", form.value.photoFile)
+
+        // その他項目の追加
+        formData.append( "employeeStatus",localStorage.getItem("employeeStatus") )
+        formData.append( "id",localStorage.getItem("employeeId") )
+        formData.append("departmentName",form.value.department )
+        formData.append("name",form.value.name )
+        formData.append("email",form.value.email )
+        formData.append("phoneNo",form.value.phone )
+        formData.append("hireDate",form.value.joined )
+        formData.append("position",form.value.position )
+        formData.append("employmentType",form.value.workStyle )
+        formData.append("managerName",form.value.manager )
+        formData.append("emergencyTel",form.value.emergency )
+        formData.append("slackId",form.value.slack )
+        formData.append("teamsId",form.value.teams )
+        formData.append("photoPath",form.value.photo )
+        formData.append("selfPr",form.value.selfPR )
+        formData.append("staffBasicInfoStaus",localStorage.getItem("staffBasicInfoStaus") )
+        formData.append("birthday",form.value.dob )
+        formData.append("gender",form.value.gender )
+        formData.append("address",form.value.address )
+        formData.append("education",form.value.education )
+        //formData.append("staffSkillRequestList",skills.value )
+        appendListToFormData(formData, skills.value, "staffSkillRequestList");
+        //formData.append("staffCategoryRequestList",certs.value )
+        appendListToFormData(formData, certs.value, "staffCategoryRequestList");
+        //formData.append("staffProjectRequestList",projects.value )
+        appendListToFormData(formData, projects.value, "staffProjectRequestList");
+
+
+        await request.post("/employee/edit",formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        })
+        .then(res => {
+          console.log("保存正常終了", res.data)
+          localStorage.setItem("photo", res.data.path); 
+        })
+        .catch(err => {
+          console.error("保存失敗終了", err)
+        })
+    
         // 保存员工情報到 localStorage
         localStorage.setItem("employeeStatus", "1"); 
-        localStorage.setItem("employeeId", data.id); 
-        localStorage.setItem("departmentName", data.departmentName); 
-        localStorage.setItem("name", data.name); 
-        localStorage.setItem("email", data.email); 
-        localStorage.setItem("phoneNo", data.phoneNo); 
-        localStorage.setItem("hireDate", data.hireDate); 
-        localStorage.setItem("position", data.position); 
-        localStorage.setItem("employmentType", data.employmentType); 
-        localStorage.setItem("managerName", data.managerName); 
-        localStorage.setItem("emergencyTel", data.emergencyTel); 
-        localStorage.setItem("slackId", data.slackId); 
-        localStorage.setItem("teamsId", data.teamsId); 
-        localStorage.setItem("selfPr", data.selfPr); 
+        localStorage.setItem("employeeId", formData.id); 
+        localStorage.setItem("departmentName", formData.departmentName); 
+        localStorage.setItem("name", formData.name); 
+        localStorage.setItem("email", formData.email); 
+        localStorage.setItem("phoneNo", formData.phoneNo); 
+        localStorage.setItem("hireDate", formData.hireDate); 
+        localStorage.setItem("position", formData.position); 
+        localStorage.setItem("employmentType", formData.employmentType); 
+        localStorage.setItem("managerName", formData.managerName); 
+        localStorage.setItem("emergencyTel", formData.emergencyTel); 
+        localStorage.setItem("slackId", formData.slackId); 
+        localStorage.setItem("teamsId", formData.teamsId); 
+        localStorage.setItem("selfPr", formData.selfPr); 
         localStorage.setItem("staffBasicInfoStaus", "1"); 
-        localStorage.setItem("birthday", data.birthday); 
-        localStorage.setItem("gender", data.gender); 
-        localStorage.setItem("address", data.address); 
-        localStorage.setItem("education", data.education); 
+        localStorage.setItem("birthday", formData.birthday); 
+        localStorage.setItem("gender", formData.gender); 
+        localStorage.setItem("address", formData.address); 
+        localStorage.setItem("education", formData.education); 
         localStorage.setItem("staffSkillRequestList", JSON.stringify(skills.value));
         localStorage.setItem("staffCategoryRequestList", JSON.stringify(certs.value) ); 
         localStorage.setItem("staffProjectRequestList", JSON.stringify(projects.value) ); 
@@ -286,6 +306,14 @@ async function onSave() {
   }
 }
 
+function appendListToFormData(fd, list, listName) {
+  list.forEach((obj, i) => {
+    Object.entries(obj).forEach(([k, v]) => {
+      const key = `${listName}[${i}].${k}`;
+      fd.append(key, v ?? "");
+    });
+  });
+}
 function onCancel() { router.push('/employee_infoshow') }
 </script>
 
@@ -510,4 +538,6 @@ button:hover {
     align-items: stretch;
   }
 }
+
+
 </style>
