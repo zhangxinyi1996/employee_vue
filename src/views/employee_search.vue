@@ -3,14 +3,13 @@
     <!-- 共通ナビメニュー -->
     <nav class="main-nav">
       <ul>
-         <li><router-link to="/top">ホーム</router-link></li>
+        <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
         <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
         <li><router-link to="/employee_search">人材管理</router-link></li>
         <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
-         <li><router-link to="/exchange_area">交流エリア</router-link></li>
-         <!-- ログアウトを右端に -->
-        <li class="logout"><a href="/logout">ログアウト</a></li>
+        <li><router-link to="/exchange_area">交流エリア</router-link></li>
+        <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
       </ul>
     </nav>
 
@@ -254,6 +253,14 @@ export default {
     },
     closeModal() {
       this.isModalActive = false;
+    },
+    logout() {
+      console.log("✅ logout() が呼ばれました");
+      alert("ログアウトしました");
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+      localStorage.removeItem("user");
+      this.$router.push("/login");
     }
   }
 }

@@ -3,14 +3,13 @@
     <!-- 共通ナビメニュー -->
     <nav class="main-nav">
       <ul>
-         <li><router-link to="/top">ホーム</router-link></li>
+        <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
         <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
         <li><router-link to="/employee_search">人材管理</router-link></li>
-        <li><a href="#">技術交流モジュール</a></li>
-         <li><router-link to="/exchange_area">交流エリア</router-link></li>
-         <!-- ログアウトを右端に -->
-        <li class="logout"><a href="/logout">ログアウト</a></li>
+        <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
+        <li><router-link to="/exchange_area">交流エリア</router-link></li>
+        <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
       </ul>
     </nav>
 
@@ -83,6 +82,16 @@
 <script>
 export default {
   name: "EmployeeInfoShow",
+  mounted() {
+  // 画面全体の背景を白にリセット
+  document.documentElement.style.backgroundImage = "none"; // html
+  document.documentElement.style.backgroundColor = "#ffffff";
+  document.body.style.backgroundImage = "none";             // body
+  document.body.style.backgroundColor = "#ffffff";
+
+  // body を画面全体に最低高さ確保
+  document.body.style.minHeight = "100vh";
+},
   data() {
     return {
       photo: "images/face.jpg",
@@ -161,6 +170,23 @@ export default {
       新しい技術を学ぶことが好きで、常に最新のトレンドをキャッチアップしています。`,
     };
   },
+  methods: {
+    logout() {
+      // デバッグ用ログ
+      console.log("✅ logout() が呼ばれました");
+
+      // メッセージ表示
+      alert("ログアウトしました");
+
+      // 保存している認証情報を削除（必要に応じて調整）
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // ログイン画面へ遷移
+      this.$router.push("/login");
+    }
+  }
 };
 </script>
 
@@ -170,10 +196,11 @@ export default {
 body {
   margin: 0;
   font-family: "游ゴシック体", "Yu Gothic", "Noto Serif JP", serif, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #f8fafc 0%, #e4e9f2 100%);
+  background-color: #f8fafc;  /* 背景画像なし */
   padding-top: 64px;
   color: #2e3a59;
   line-height: 1.8;
+  background-image: none; 
 }
 
 .main-nav {

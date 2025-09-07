@@ -2,14 +2,14 @@
   <div>
     <!-- 共通ナビメニュー -->
     <nav class="main-nav">
-      <ul>
+     <ul>
         <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
         <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
         <li><router-link to="/employee_search">人材管理</router-link></li>
-        <li><a href="#">技術交流モジュール</a></li>
+        <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
         <li><router-link to="/exchange_area">交流エリア</router-link></li>
-        <li class="logout"><a href="/logout">ログアウト</a></li>
+        <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
       </ul>
     </nav>
 
@@ -114,6 +114,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+function logout() {
+  localStorage.removeItem("token")
+  sessionStorage.removeItem("token")
+  localStorage.removeItem("user")
+  alert("ログアウトしました")
+  router.push("/login")
+}
 
 const defaultPhoto = '/images/face.jpg'
 const photoPreview = ref('')
