@@ -21,30 +21,46 @@
       <form @submit.prevent="onSave" enctype="multipart/form-data">
         <!-- 写真 -->
         <section class="form-photo">
-          <img :src="photoPreview || form.photo || defaultPhoto" alt="従業員写真" class="photo" />
+          <img :src="photoPreview || form.photo || defaultPhoto" alt="従業員写真" class="photo"/>
           <input type="file" @change="onFileChange" accept="image/*" />
         </section>
         <!-- 基本情報 -->
         <section class="form-section">
           <h2>基本情報</h2>
           <dl>
-            <dt>氏名</dt><dd><input type="text" v-model="form.name" /></dd>
-            <dt>社員番号</dt><dd><input type="text" v-model="form.employeeId" /></dd>
-            <dt>メールアドレス</dt><dd><input type="email" v-model="form.email" /></dd>
-            <dt>電話番号</dt><dd><input type="tel" v-model="form.phone" /></dd>
-            <dt>生年月日</dt><dd><input type="date" v-model="form.dob" /></dd>
-            <dt>性別</dt>
+            <dt>(＊は必須入力項目)</dt><dd>  </dd>
+            <dt>氏名＊</dt><dd><input type="text" v-model="form.name" required /></dd>
+            <!-- <dt>社員番号</dt><dd><input type="text" v-model="form.employeeId" readonly /></dd>-->
+            <dt>メールアドレス＊</dt><dd><input type="email" v-model="form.email" required /></dd>
+            <dt>電話番号＊</dt><dd><input type="tel" v-model="form.phone" required /></dd>
+            <dt>生年月日＊</dt><dd><input type="date" v-model="form.dob" required /></dd>
+            <dt>性別＊</dt>
             <dd>
-              <select v-model="form.gender">
+              <select v-model="form.gender" required >
                 <option>男性</option>
                 <option>女性</option>
                 <option>その他</option>
               </select>
             </dd>
-            <dt>住所</dt><dd><input type="text" v-model="form.address" /></dd>
-            <dt>最終学歴</dt><dd><input type="text" v-model="form.education" /></dd>
-            <dt>入社年月日</dt><dd><input type="date" v-model="form.joined" /></dd>
-            <dt>部署</dt><dd><input type="text" v-model="form.department" /></dd>
+            <dt>住所＊</dt><dd><input type="text" v-model="form.address" required /></dd>
+            <dt>最終学歴＊</dt><dd><input type="text" v-model="form.education" required /></dd>
+            <dt>入社年月日＊</dt><dd><input type="date" v-model="form.joined" required /></dd>
+            <dt>部署＊</dt>
+              <dd>
+
+                <select class="branch-input" v-model="selectedBranchId" @change="onBranchChange" required >
+                  <option v-for="b in branches" :key="b.id" :value="b.id">
+                    {{ b.name }}
+                  </option>
+                </select>
+
+                <select class="depart-input" v-model="selectedDeptId" :disabled="!selectedBranchId || depts.length === 0" required >
+                  <option v-for="d in depts" :key="d.id" :value="d.id">
+                    {{ d.name }}
+                  </option>
+                </select>
+
+              </dd>
             <dt>役職</dt><dd><input type="text" v-model="form.position" /></dd>
             <dt>勤務形態</dt><dd><input type="text" v-model="form.workStyle" /></dd>
             <dt>直属上司</dt><dd><input type="text" v-model="form.manager" /></dd>
@@ -72,9 +88,9 @@
           <h2>資格</h2>
           <div class="cert-list-edit">
             <div v-for="(cert, idx) in certs" :key="idx" class="cert-input">
-              <input type="text" v-model="cert.categoryName" placeholder="資格名" />
               <input type="date" v-model="cert.getYmd" />
-              <button type="button" @click="removeCert(idx)">削除</button>
+              <input type="text" v-model="cert.categoryName" placeholder="資格名" />
+              <button type="button" @click="removeCert(idx)" style="width:80px">削除</button>
             </div>
             <button type="button" @click="addCert">資格追加</button>
           </div>
@@ -85,11 +101,11 @@
           <h2>プロジェクト経験</h2>
           <div class="project-list-edit">
             <div v-for="(project, idx) in projects" :key="idx" class="project-input">
-              <input type="date" v-model="project.projectStart" class="short-input" /> 
+              <input type="date" v-model="project.projectStart" /> 
               <input type="date" v-model="project.projectEnd" />
-              <input type="text" v-model="project.projectName" placeholder="プロジェクト名" />
+              <input type="text" v-model="project.projectName" placeholder="プロジェクト名"/>
               <input type="text" v-model="project.projectRole" placeholder="役割" />
-           <button type="button" @click="removeProject(idx)">削除</button>
+              <button type="button" @click="removeProject(idx)" style="width:80px">削除</button>
             </div>
             <button type="button" @click="addProject">プロジェクト追加</button>
           </div>
@@ -104,7 +120,7 @@
         <!-- ボタン -->
         <div class="form-buttons">
           <button type="submit">保存</button>
-          <button type="button" @click="onCancel">キャンセル</button>
+          <button type="button" @click="onCancel">取消</button>
         </div>
       </form>
     </div>
@@ -112,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
 
@@ -142,7 +158,6 @@ const form = ref({
   address: localStorage.getItem("address") || '',
   education: localStorage.getItem("education") || '',
   joined: localStorage.getItem("hireDate")|| '',
-  department:localStorage.getItem("departmentName") || '',
   position: localStorage.getItem("position") || '',
   workStyle: localStorage.getItem("employmentType") || '',
   manager: localStorage.getItem("managerName") || '',
@@ -151,6 +166,40 @@ const form = ref({
   teams: localStorage.getItem("teamsId")|| '',
   selfPR: localStorage.getItem("selfPr")|| ''
 
+})
+
+const branches = ref([])
+const depts = ref([])
+const selectedBranchId = ref('')
+const selectedDeptId = ref('')
+
+const deptCache = new Map() // key: branch_id, value: dept array
+//  branchs:JSON.parse(localStorage.getItem("departmentRequestList")) || '',
+const departmentsAll = JSON.parse(localStorage.getItem("departmentRequestList")) || []
+departmentsAll.forEach(dept => {
+      const arr = deptCache.get(dept.branchId) || []
+      if (!arr.find(d => d.id === dept.departmentId)) {
+        arr.push({ id: dept.departmentId, name: dept.departmentName })
+        deptCache.set(dept.branchId, arr)
+      }
+      if(!branches.value.find(b => b.id === dept.branchId)) {
+        branches.value.push({ id: dept.branchId, name: dept.branchName })
+      }
+})
+
+function onBranchChange() {
+  if (!selectedBranchId.value) {
+    selectedDeptId.value = '' // 先清空部门选择
+    return
+  }
+  depts.value = deptCache.get(Number(selectedBranchId.value)) || []
+}
+
+onMounted(() => {
+  selectedBranchId.value = localStorage.getItem("branchId") || ''
+  depts.value = deptCache.get(Number(selectedBranchId.value)) || []
+  selectedDeptId.value = localStorage.getItem("departmentId") || ''
+  window.scrollTo(0, 0)
 })
 
 const skills = ref([
@@ -243,7 +292,8 @@ async function onSave() {
         // その他項目の追加
         formData.append( "employeeStatus",localStorage.getItem("employeeStatus") )
         formData.append( "id",localStorage.getItem("employeeId") )
-        formData.append("departmentName",form.value.department )
+        formData.append("branchId", selectedBranchId.value )
+        formData.append("departmentId",selectedDeptId.value )
         formData.append("name",form.value.name )
         formData.append("email",form.value.email )
         formData.append("phoneNo",form.value.phone )
@@ -432,20 +482,22 @@ dl dd input[type="email"],
 dl dd input[type="tel"],
 dl dd input[type="date"],
 dl dd select {
-  width: 800px;        /* 親要素に合わせる */
+  width: 80%;        /* 親要素に合わせる */
   box-sizing: border-box; /* パディング込みで幅計算 */
 }
 
 /* 中央寄せにする場合 */
 dl dd {
   display: flex;
-  justify-content: center; /* 横方向中央寄せ */
+  justify-content: left; /* 横方向中央寄せ */
 }
 
 dt {
+  margin: 0;
   font-weight: 700;
   color: #455a86;
   padding-top: 4px;
+  justify-content: center; /* 横方向右寄せ */
 }
 
 dd {
@@ -463,7 +515,16 @@ input[type="text"], input[type="email"], input[type="tel"], input[type="date"], 
   outline: none;
   box-shadow: inset 1px 1px 4px rgba(0,0,0,0.05);
 }
-
+ .branch-input{
+  width: 39%;        /* 親要素に合わせる */
+  box-sizing:border-box; /* パディング込みで幅計算 */
+  justify-content: left; /* 横方向右寄せ */
+}
+ .depart-input{
+  width: 39%;        /* 親要素に合わせる */
+  box-sizing:border-box; /* パディング込みで幅計算 */
+  margin-left: 2%; /* 左边留点空隙 */
+}
 textarea {
   resize: vertical;
 }
@@ -489,8 +550,9 @@ button:hover {
   gap: 12px;
 }
 
-.skill-input, .cert-input, .project-input {
+.skill-input, .cert-input, .project-input{
   display: flex;
+  flex-wrap: wrap;  
   gap: 12px;
   align-items: center;
   justify-content: center;  /* 水平方向中央寄せ */
@@ -499,19 +561,42 @@ button:hover {
 /* 技術名は広め */
 .skill-input input[type="text"],
 .skill-input select {
- width: 800px;   /* 最大幅を指定（任意） */
+ width: 50%;   /* 最大幅を指定（任意） */
+  min-width: 150px;
 }
+
 
 /* 技術レベルは短く */
 .skill-input select,
 .skill-input input[type="number"] {
-  width: 200px;
+  width: 10%;
+  min-width: 150px;
 }
 
-.cert-input input, .project-input input {
-  flex: 1;
+.cert-input input[type="date"]{
+  flex:1;
+  max-width: 120px;
 }
 
+.cert-input input[type="text"] {
+  flex:3;
+  min-width: 200px;
+}
+
+.project-input input[type="date"] {
+  
+  flex:1;
+  max-width: 120px;
+}
+.project-input input[placeholder="プロジェクト名"] {
+  flex:3;
+  min-width: 200px;
+}
+
+.project-input input[placeholder="役割" ] {
+  flex:1;
+  min-width: 200px;
+}
 .photo {
   display: block;
   max-width: 150px;

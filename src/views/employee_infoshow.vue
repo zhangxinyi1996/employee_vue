@@ -94,6 +94,7 @@ export default {
 
   // body を画面全体に最低高さ確保
   document.body.style.minHeight = "100vh";
+  window.scrollTo(0, 0)
 },
   data() {
     return {
@@ -189,7 +190,10 @@ export default {
         localStorage.setItem("photo", apiData.photoPath || ''); 
         localStorage.setItem("employeeStatus", apiData.employeeStatus || ''); 
         localStorage.setItem("employeeId", apiData.employeeId || ''); 
-        localStorage.setItem("departmentName", apiData.DepartmentName || ''); 
+        localStorage.setItem("branchId", apiData.branchId || ''); 
+        localStorage.setItem("departmentId", apiData.departmentId || ''); 
+        localStorage.setItem("branchName", apiData.branchName || ''); 
+        localStorage.setItem("departmentName", apiData.departmentName || ''); 
         localStorage.setItem("name", apiData.name || ''); 
         localStorage.setItem("email", apiData.email || ''); 
         localStorage.setItem("phoneNo", apiData.phoneNo || ''); 
@@ -198,7 +202,7 @@ export default {
         localStorage.setItem("employmentType", apiData.employmentType || ''); 
         localStorage.setItem("managerName", apiData.managerName || ''); 
         localStorage.setItem("emergencyTel", apiData.emergencyTel || ''); 
-        localStorage.setItem("slackId", apiData.slackId) || ''; 
+        localStorage.setItem("slackId", apiData.slackId || ''); 
         localStorage.setItem("teamsId", apiData.teamsId || ''); 
         localStorage.setItem("selfPr", apiData.selfPr || ''); 
         localStorage.setItem("staffBasicInfoStaus", apiData.staffBasicInfoStaus || ''); 
@@ -209,6 +213,7 @@ export default {
         localStorage.setItem("staffSkillRequestList", JSON.stringify(apiData.staffSkillRequestList)); 
         localStorage.setItem("staffCategoryRequestList", JSON.stringify(this.certifications)); 
         localStorage.setItem("staffProjectRequestList", JSON.stringify(this.projects)); 
+        localStorage.setItem("departmentRequestList", JSON.stringify(apiData.departmentRequestList)); 
 
       } catch (error) {
         console.error("请求员工信息失败:", error);
@@ -230,7 +235,7 @@ export default {
           "住所": data.address || "",
           "最終学歴": data.education || "",
           "入社年月日": data.hireDate || "",
-          "部署": data.department || "",
+          "部署": (data.branchName || "") + " " + (data.departmentName || ""),
           "役職": data.position || "",
           "勤務形態": data.employmentType || "",
           "直属上司": data.managerName || "",
