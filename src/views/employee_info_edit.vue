@@ -545,12 +545,23 @@ button:hover {
   background-color: #143a6e;
 }
 
-.skills-list-edit, .cert-list-edit, .project-list-edit {
+.cert-list-edit, .project-list-edit {
   display: grid;
   gap: 12px;
 }
 
-.skill-input, .cert-input, .project-input{
+.skills-list-edit  {
+  display: flex;       /* 一行排列 */
+  flex-wrap: wrap;     /* 超过宽度换行 */
+  gap: 20px;           /* 每组技能之间的间隔 */
+}
+.skill-input {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+  gap: 6px;            /* 输入框和下拉框间距 */
+  min-width: 100px;    /* 每组技能的最小宽度 */
+}
+.cert-input, .project-input{
   display: flex;
   flex-wrap: wrap;  
   gap: 12px;
@@ -561,8 +572,7 @@ button:hover {
 /* 技術名は広め */
 .skill-input input[type="text"],
 .skill-input select {
- width: 50%;   /* 最大幅を指定（任意） */
-  min-width: 150px;
+  min-width: 80px;
 }
 
 
