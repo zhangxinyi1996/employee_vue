@@ -5,8 +5,8 @@
       <ul>
         <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
-        <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
-        <li><router-link to="/employee_search">人材管理</router-link></li>
+        <li v-if="permissionsLevel=='2'"><router-link to="/employee_skillmap">スキル分析</router-link></li>
+        <li v-if="permissionsLevel=='2'"><router-link to="/employee_search">人材管理</router-link></li>
         <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
         <li><router-link to="/exchange_area">交流エリア</router-link></li>
         <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
@@ -110,6 +110,7 @@
 </template>
 
 <script>
+import request from '../utils/request'
 export default {
   name: "HomePage",
   data() {
@@ -118,10 +119,33 @@ export default {
         name: "",
         email: "",
         message: ""
-      }
+      },
+      permissionsLevel: localStorage.getItem("permissionsLevel") || ''
     };
   },
+    // 在组件实例创建后立即发起请求
+  async created() {
+    await this.fetchUserInfo();
+  },
   methods: {
+        // 异步获取员工数据的方法
+    async fetchUserInfo() {
+      try {
+        // 使用 await 暂停执行，等待请求完成
+        const usernameStorage = localStorage.getItem('username') || '';
+        const apiData = await request.post("/employee/top",{
+        username: usernameStorage
+    });
+        // 保存员工情報到 localStorage
+        this.permissionsLevel = apiData.permissionsLevel || '';
+        localStorage.setItem("permissionsLevel", apiData.permissionsLevel || ''); 
+
+      } catch (error) {
+        console.error("请求员工信息失败:", error)
+        //showError.value = true
+        //errorMessage.value = err.response?.data?.message || 'ログインに失敗しました'
+      }
+    },
     handleSubmit() {
       alert(`送信内容\nお名前: ${this.form.name}\nメール: ${this.form.email}\n内容: ${this.form.message}`);
       this.form.name = "";
@@ -131,9 +155,8 @@ export default {
     logout() {
     console.log("✅ logout() が呼ばれました");
     alert("ログアウトしました");
-    localStorage.removeItem("token");
     sessionStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.clear();
     this.$router.push("/login");
   }
  }

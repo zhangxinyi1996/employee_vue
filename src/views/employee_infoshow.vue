@@ -5,8 +5,8 @@
       <ul>
         <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
-        <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
-        <li><router-link to="/employee_search">人材管理</router-link></li>
+        <li v-if="permissionsLevel=='2'"><router-link to="/employee_skillmap">スキル分析</router-link></li>
+        <li v-if="permissionsLevel=='2'"><router-link to="/employee_search">人材管理</router-link></li>
         <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
         <li><router-link to="/exchange_area">交流エリア</router-link></li>
         <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
@@ -168,6 +168,7 @@ export default {
         { projectStart: "", projectEnd:"", projectName: "" , projectRole: ""},
       ],
       selfPR: "",
+      permissionsLevel: localStorage.getItem("permissionsLevel") || '',
     };
   },
 
@@ -261,9 +262,8 @@ export default {
       alert("ログアウトしました");
 
       // 保存している認証情報を削除（必要に応じて調整）
-      localStorage.removeItem("token");
+      localStorage.clear();
       sessionStorage.removeItem("token");
-      localStorage.removeItem("user");
 
       // ログイン画面へ遷移
       this.$router.push("/login");

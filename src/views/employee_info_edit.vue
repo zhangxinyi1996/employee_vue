@@ -5,8 +5,8 @@
      <ul>
         <li><router-link to="/top">ホーム</router-link></li>
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
-        <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
-        <li><router-link to="/employee_search">人材管理</router-link></li>
+        <li v-if="permissionsLevel=='2'"><router-link to="/employee_skillmap">スキル分析</router-link></li>
+        <li v-if="permissionsLevel=='2'"><router-link to="/employee_search">人材管理</router-link></li>
         <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
         <li><router-link to="/exchange_area">交流エリア</router-link></li>
         <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
@@ -134,17 +134,9 @@ import request from '../utils/request'
 
 const router = useRouter()
 
-function logout() {
-  localStorage.removeItem("token")
-  sessionStorage.removeItem("token")
-  localStorage.removeItem("user")
-  alert("ログアウトしました")
-  router.push("/login")
-}
-
 const defaultPhoto = '/images/face.jpg'
 const photoPreview = ref('')
-
+const permissionsLevel = ref(localStorage.getItem("permissionsLevel"))
 
 const form = ref({
   photo: localStorage.getItem("photo") || defaultPhoto,
@@ -193,6 +185,13 @@ function onBranchChange() {
     return
   }
   depts.value = deptCache.get(Number(selectedBranchId.value)) || []
+}
+function  logout() {
+    console.log("✅ logout() が呼ばれました");
+    alert("ログアウトしました");
+    sessionStorage.removeItem("token");
+    localStorage.clear();
+    router.push("/login");
 }
 
 onMounted(() => {
