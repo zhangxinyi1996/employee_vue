@@ -139,9 +139,10 @@ export default {
         // 保存员工情報到 localStorage
         this.permissionsLevel = apiData.permissionsLevel || '';
         localStorage.setItem("permissionsLevel", apiData.permissionsLevel || ''); 
+        localStorage.setItem("employeeId", apiData.employeeId || ''); 
 
-      } catch (error) {
-        console.error("请求员工信息失败:", error)
+      } catch (err) {
+        console.error("社員IDと権限レベルの取得に失敗しました:", err.response?.data?.message);
         //showError.value = true
         //errorMessage.value = err.response?.data?.message || 'ログインに失敗しました'
       }

@@ -24,6 +24,10 @@
           <img :src="photoPreview || form.photo || defaultPhoto" alt="従業員写真" class="photo"/>
           <input type="file" @change="onFileChange" accept="image/*" />
         </section>
+
+        <section class="form-section" v-if="showError">
+          <div class="error-message" style="font-size: large; white-space: pre-line;" v-if="showError">{{ errorMessage }}</div>
+        </section>
         <!-- 基本情報 -->
         <section class="form-section">
           <h2>基本情報</h2>
@@ -33,7 +37,7 @@
             <!-- <dt>社員番号</dt><dd><input type="text" v-model="form.employeeId" readonly /></dd>-->
             <dt>メールアドレス＊</dt><dd><input type="email" v-model="form.email" required /></dd>
             <dt>電話番号＊</dt><dd><input type="tel" v-model="form.phone" required /></dd>
-            <dt>生年月日＊</dt><dd><input type="date" v-model="form.dob" required /></dd>
+            <dt>生年月日＊</dt><dd><input type="date" v-model="form.dob"  required /></dd>
             <dt>性別＊</dt>
             <dd>
               <select v-model="form.gender" required >
@@ -44,7 +48,7 @@
             </dd>
             <dt>住所＊</dt><dd><input type="text" v-model="form.address" required /></dd>
             <dt>最終学歴＊</dt><dd><input type="text" v-model="form.education" required /></dd>
-            <dt>入社年月日＊</dt><dd><input type="date" v-model="form.joined" required /></dd>
+            <dt>入社年月日＊</dt><dd><input type="date" v-model="form.joined " required /></dd>
             <dt>部署＊</dt>
               <dd>
 
@@ -64,7 +68,7 @@
             <dt>役職</dt><dd><input type="text" v-model="form.position" /></dd>
             <dt>勤務形態</dt><dd><input type="text" v-model="form.workStyle" /></dd>
             <dt>直属上司</dt><dd><input type="text" v-model="form.manager" /></dd>
-            <dt>緊急連絡先</dt><dd><input type="text" v-model="form.emergency" /></dd>
+            <dt>緊急連絡先</dt><dd><input type="text" v-model="form.emergency " /></dd>
             <dt>Slack ID</dt><dd><input type="text" v-model="form.slack" /></dd>
             <dt>Teams ID</dt><dd><input type="text" v-model="form.teams" /></dd>
           </dl>
@@ -203,8 +207,8 @@ onMounted(() => {
 
 const skills = ref([
 
-        { "skillId": 0, "name": "Java", "level": 1 },
-        { "skillId": 1, "name": "Python", "level": 2 },
+        { "skillId": 0, "name": "Java", "level": 0 },
+        { "skillId": 1, "name": "Python", "level": 0 },
         { "skillId": 2, "name": "JavaScript", "level": 0 },
         { "skillId": 3, "name": "TypeScript", "level": 0 },
         { "skillId": 4, "name": "AWS", "level": 0 },
@@ -280,85 +284,171 @@ function removeCert(idx) { certs.value.splice(idx, 1) }
 function addProject() { projects.value.push({ projectStart: "",projectEnd:"",projectName: "" ,projectRole: "" }) }
 function removeProject(idx) { projects.value.splice(idx, 1) }
 
-async function onSave() {
-  if (confirm('編集した内容を保存してもよろしいですか？')) {
+const showError = ref(false)
+const errorMessage = ref('')
 
-   try {
-        // ファイルのアップロード処理のため FormData を使う
-        const formData = new FormData()
-        formData.append("photoFile", form.value.photoFile)
+function validateInputFields() {
+  showError.value = false
+  errorMessage.value = ''
+  let msg = ''
 
-        // その他項目の追加
-        formData.append( "employeeStatus",localStorage.getItem("employeeStatus") )
-        formData.append( "id",localStorage.getItem("employeeId") )
-        formData.append("branchId", selectedBranchId.value )
-        formData.append("departmentId",selectedDeptId.value )
-        formData.append("name",form.value.name )
-        formData.append("email",form.value.email )
-        formData.append("phoneNo",form.value.phone )
-        formData.append("hireDate",form.value.joined )
-        formData.append("position",form.value.position )
-        formData.append("employmentType",form.value.workStyle )
-        formData.append("managerName",form.value.manager )
-        formData.append("emergencyTel",form.value.emergency )
-        formData.append("slackId",form.value.slack )
-        formData.append("teamsId",form.value.teams )
-        formData.append("photoPath",form.value.photo )
-        formData.append("selfPr",form.value.selfPR )
-        formData.append("staffBasicInfoStaus",localStorage.getItem("staffBasicInfoStaus") )
-        formData.append("birthday",form.value.dob )
-        formData.append("gender",form.value.gender )
-        formData.append("address",form.value.address )
-        formData.append("education",form.value.education )
-        //formData.append("staffSkillRequestList",skills.value )
-        appendListToFormData(formData, skills.value, "staffSkillRequestList");
-        //formData.append("staffCategoryRequestList",certs.value )
-        appendListToFormData(formData, certs.value, "staffCategoryRequestList");
-        //formData.append("staffProjectRequestList",projects.value )
-        appendListToFormData(formData, projects.value, "staffProjectRequestList");
+  // 電話番号の簡易チェック
+  const regexPhone = /^0\d{9,10}$/
+  if (!regexPhone.test(form.value.phone)) {
+    msg = "電話番号：正しい電話番号を入力してください (例: 09012345678)" 
+  }
 
+  // 生年月日の簡易チェック
+  const dob = new Date(form.value.dob)
+  const today = new Date()
+  if (dob > today) {
+    msg += (msg ? '\n' : '') + "生年月日：未来の日付は入力できません"
+  }
 
-        await request.post("/employee/edit",formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        })
-        .then(res => {
-          console.log("保存正常終了", res.data)
-          localStorage.setItem("photo", res.data.path); 
-        })
-        .catch(err => {
-          console.error("保存失敗終了", err)
-        })
-    
-        // 保存员工情報到 localStorage
-        localStorage.setItem("employeeStatus", "1"); 
-        localStorage.setItem("employeeId", formData.id); 
-        localStorage.setItem("departmentName", formData.departmentName); 
-        localStorage.setItem("name", formData.name); 
-        localStorage.setItem("email", formData.email); 
-        localStorage.setItem("phoneNo", formData.phoneNo); 
-        localStorage.setItem("hireDate", formData.hireDate); 
-        localStorage.setItem("position", formData.position); 
-        localStorage.setItem("employmentType", formData.employmentType); 
-        localStorage.setItem("managerName", formData.managerName); 
-        localStorage.setItem("emergencyTel", formData.emergencyTel); 
-        localStorage.setItem("slackId", formData.slackId); 
-        localStorage.setItem("teamsId", formData.teamsId); 
-        localStorage.setItem("selfPr", formData.selfPr); 
-        localStorage.setItem("staffBasicInfoStaus", "1"); 
-        localStorage.setItem("birthday", formData.birthday); 
-        localStorage.setItem("gender", formData.gender); 
-        localStorage.setItem("address", formData.address); 
-        localStorage.setItem("education", formData.education); 
-        localStorage.setItem("staffSkillRequestList", JSON.stringify(skills.value));
-        localStorage.setItem("staffCategoryRequestList", JSON.stringify(certs.value) ); 
-        localStorage.setItem("staffProjectRequestList", JSON.stringify(projects.value) ); 
+  // 入社日の簡易チェック
+  const joined = new Date(form.value.joined)
+  if (joined > today) {
+    msg += (msg ? '\n' : '') + "入社年月日：未来の日付は入力できません"
+  }
 
-      } catch (error) {
-        console.error("请求员工信息失败:", error);
-        // 可以根据需要处理错误，例如显示错误消息
+  // 緊急連絡先の簡易チェック
+  if (form.value.emergency) {
+    if (!regexPhone.test(form.value.emergency)) {
+      msg += (msg ? '\n' : '') + "緊急連絡先：正しい電話番号を入力してください (例: 09012345678)" 
+    }
+  }
+
+  // 資格の取得日の簡易チェック
+  certs.value.forEach((cert, idx) => {
+
+    if (!cert.getYmd && !cert.categoryName ) {
+      return
+    }
+
+    if (!cert.getYmd && cert.categoryName ) {
+      msg += (msg ? '\n' : '') + `資格${idx+1}：資格の取得日を入力してください`
+    }
+
+    if (cert.getYmd && !cert.categoryName ) {
+      msg += (msg ? '\n' : '') + `資格${idx+1}：資格名を入力してください`
+    }
+
+    const getYmd = new Date(cert.getYmd)
+    if (getYmd > today) {
+      msg += (msg ? '\n' : '') + `資格${idx+1}：未来の日付は入力できません`
+    }
+  })
+
+  // プロジェクトの開始日と終了日の簡易チェック
+  projects.value.forEach((project, idx) => {
+    if (!project.projectStart && !project.projectEnd && !project.projectName && !project.projectRole ) {
+      return
+    }
+    if (!project.projectStart || !project.projectEnd || !project.projectName || !project.projectRole ) {  
+      msg += (msg ? '\n' : '') + `プロジェクト${idx+1}：プロジェクトかかわる全項目を入力してください`
+      return
+    }
+
+    if (project.projectStart && project.projectEnd) {    
+      const projectStart = new Date(project.projectStart)
+      const projectEnd = new Date(project.projectEnd)
+      if (projectStart > projectEnd) {
+        msg += (msg ? '\n' : '') + `プロジェクト${idx+1}：開始日が終了日より前の日付は入力できません`
       }
-    
-    
+      if (projectStart > today) {
+        msg += (msg ? '\n' : '') + `プロジェクト${idx+1}：開始日が未来の日付は入力できません`
+      }
+      if (projectEnd > today) {
+        msg += (msg ? '\n' : '') + `プロジェクト${idx+1}：終了日が未来の日付は入力できません`
+      }
+    }
+  })
+
+  if (msg) {
+    showError.value = true
+    errorMessage.value = msg
+    return false
+  }
+  return true
+}
+
+async function onSave() {
+  if (!validateInputFields()) {
+    window.scrollTo(0, 0)
+    return
+  }
+  if (confirm('編集した内容を保存してもよろしいですか？')) {
+       
+    // ファイルのアップロード処理のため FormData を使う
+    const formData = new FormData()
+    formData.append("photoFile", form.value.photoFile)
+
+    // その他項目の追加
+    formData.append( "employeeStatus",localStorage.getItem("employeeStatus") )
+    formData.append( "id",localStorage.getItem("employeeId") )
+    formData.append("branchId", selectedBranchId.value )
+    formData.append("departmentId",selectedDeptId.value )
+    formData.append("name",form.value.name )
+    formData.append("email",form.value.email )
+    formData.append("phoneNo",form.value.phone )
+    formData.append("hireDate",form.value.joined )
+    formData.append("position",form.value.position )
+    formData.append("employmentType",form.value.workStyle )
+    formData.append("managerName",form.value.manager )
+    formData.append("emergencyTel",form.value.emergency )
+    formData.append("slackId",form.value.slack )
+    formData.append("teamsId",form.value.teams )
+    formData.append("photoPath",form.value.photo )
+    formData.append("selfPr",form.value.selfPR )
+    formData.append("staffBasicInfoStaus",localStorage.getItem("staffBasicInfoStaus") )
+    formData.append("birthday",form.value.dob )
+    formData.append("gender",form.value.gender )
+    formData.append("address",form.value.address )
+    formData.append("education",form.value.education )
+    //formData.append("staffSkillRequestList",skills.value )
+    appendListToFormData(formData, skills.value, "staffSkillRequestList");
+    //formData.append("staffCategoryRequestList",certs.value )
+    appendListToFormData(formData, certs.value, "staffCategoryRequestList");
+    //formData.append("staffProjectRequestList",projects.value )
+    appendListToFormData(formData, projects.value, "staffProjectRequestList");
+
+
+    await request.post("/employee/edit",formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    })
+    .then(res => {
+      console.log("保存正常終了", res.data)
+      localStorage.setItem("photo", res.data.path); 
+    })
+    .catch(err => {
+      console.error("保存失敗終了", err)
+    })
+
+    // 保存员工情報到 localStorage
+    localStorage.setItem("employeeStatus", "1"); 
+    localStorage.setItem("employeeId", formData.id); 
+    localStorage.setItem("departmentName", formData.departmentName); 
+    localStorage.setItem("name", formData.name); 
+    localStorage.setItem("email", formData.email); 
+    localStorage.setItem("phoneNo", formData.phoneNo); 
+    localStorage.setItem("hireDate", formData.hireDate); 
+    localStorage.setItem("position", formData.position); 
+    localStorage.setItem("employmentType", formData.employmentType); 
+    localStorage.setItem("managerName", formData.managerName); 
+    localStorage.setItem("emergencyTel", formData.emergencyTel); 
+    localStorage.setItem("slackId", formData.slackId); 
+    localStorage.setItem("teamsId", formData.teamsId); 
+    localStorage.setItem("selfPr", formData.selfPr); 
+    localStorage.setItem("staffBasicInfoStaus", "1"); 
+    localStorage.setItem("birthday", formData.birthday); 
+    localStorage.setItem("gender", formData.gender); 
+    localStorage.setItem("address", formData.address); 
+    localStorage.setItem("education", formData.education); 
+    localStorage.setItem("staffSkillRequestList", JSON.stringify(skills.value));
+    localStorage.setItem("staffCategoryRequestList", JSON.stringify(certs.value) ); 
+    localStorage.setItem("staffProjectRequestList", JSON.stringify(projects.value) ); 
+    alert('保存しました。')
+   
     router.push('/employee_infoshow')
   }
 }
@@ -372,8 +462,9 @@ function appendListToFormData(fd, list, listName) {
   });
 }
 function onCancel() { router.push('/employee_infoshow') }
-</script>
 
+
+</script>
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap');
 
