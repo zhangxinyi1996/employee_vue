@@ -280,6 +280,11 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 
 export default {
+  data() {
+    return {
+      permissionsLevel: localStorage.getItem("permissionsLevel") || '', // ここで初期値を定義
+    }
+  },
   name: "TechExchange",
   setup() {
     // Reactive data
@@ -555,7 +560,7 @@ export default {
         // this.$router.push("/login")
       }
     }
-
+      
     // ライフサイクル
     onMounted(() => {
       // TODO: 初期データの読み込み
