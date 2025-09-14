@@ -92,6 +92,7 @@
 </template>
 
 <script>
+import { logoutAndRedirect } from '@/utils/auth'
 export default {
   name: "ExchangeArea",
   data() {
@@ -150,7 +151,7 @@ export default {
       const file = event.target.files[0];
       if (file) this.newPost.image = URL.createObjectURL(file);
     },
-    logout() {
+    /*logout() {
       // デバッグ用ログ
       console.log("✅ logout() が呼ばれました");
 
@@ -163,7 +164,8 @@ export default {
 
       // ログイン画面へ遷移
       this.$router.push("/login");
-    }
+    }*/
+    logout() { logoutAndRedirect(this.$router) }
   }
 };
 </script>

@@ -44,10 +44,10 @@
       <div class="input-group">
         <label style="margin-bottom: 5px;">権限</label><br />
         <label style="margin-right: 10px;">
-          <input type="radio" value="admin" v-model="role" /> 管理者
+          <input type="radio" value="2" v-model="role" /> 管理者
         </label>
         <label>
-          <input type="radio" value="user" v-model="role" /> 一般ユーザー
+          <input type="radio" value="1" v-model="role" /> 一般ユーザー
         </label>
       </div>
 
@@ -72,7 +72,7 @@ export default {
       email: 'placeholder@example.com',
       password: '',
       confirm: '',
-      role: 'user',
+      role: '',
       showPassword: false,
       showConfirm: false,
       showError: false,
@@ -103,7 +103,7 @@ export default {
           username: this.username,
          // email: this.email,
           password: this.password,
-         // role: this.role
+          role: this.role
         })
 
         alert('登録成功！ログインしてください')

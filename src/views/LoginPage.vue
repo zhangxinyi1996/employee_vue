@@ -66,16 +66,16 @@ const handleLogin = async () => {
   try {
     const data = await request.post('/auth/login', {
       username: username.value,
-      password: password.value
+      password: password.value,
+      rememberMe: rememberMe.value
     })
 
-    const token =data.token  // ここを必ずresponseに合わせてください
+    const { token, user } = data
     localStorage.setItem('token', token)
-    localStorage.setItem('username', username.value) // ← 追加20250826
+    localStorage.setItem('username', user.username)
 
     alert('ログイン成功')
--   router.push('/dashboard')
-+   router.push('/top')
+    router.push('/top')
   } catch (err) {
     showError.value = true
     errorMessage.value = err.response?.data?.message || 'ログインに失敗しました'
