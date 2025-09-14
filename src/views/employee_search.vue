@@ -134,6 +134,7 @@
 </template>
 
 <script>
+import { logoutAndRedirect } from '@/utils/auth'
 export default {
   name: 'EmployeeManagement',
   data() {
@@ -255,12 +256,7 @@ export default {
       this.isModalActive = false;
     },
     logout() {
-      console.log("✅ logout() が呼ばれました");
-      alert("ログアウトしました");
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
-      localStorage.removeItem("user");
-      this.$router.push("/login");
+     logoutAndRedirect(this.$router)
     }
   }
 }

@@ -132,6 +132,7 @@
 </template>
 
 <script setup>
+import { logoutAndRedirect } from '@/utils/auth'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
@@ -191,11 +192,7 @@ function onBranchChange() {
   depts.value = deptCache.get(Number(selectedBranchId.value)) || []
 }
 function  logout() {
-    console.log("✅ logout() が呼ばれました");
-    alert("ログアウトしました");
-    sessionStorage.removeItem("token");
-    localStorage.clear();
-    router.push("/login");
+logoutAndRedirect(router) 
 }
 
 onMounted(() => {

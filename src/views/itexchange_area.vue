@@ -83,6 +83,7 @@
 </template>
 
 <script>
+import { logoutAndRedirect } from '@/utils/auth'
 export default {
   name: "TechExchange",
   data() {
@@ -120,18 +121,7 @@ export default {
       this.newTraining = { title: "", date: "" };
     },
        logout() {
-      // デバッグ用ログ
-      console.log("✅ logout() が呼ばれました");
-
-      // メッセージ表示
-      alert("ログアウトしました");
-
-      // 保存している認証情報を削除（必要に応じて調整）
-      localStorage.clear();
-      sessionStorage.removeItem("token");
-
-      // ログイン画面へ遷移
-      this.$router.push("/login");
+      logoutAndRedirect(this.$router)
     },
   },
 };
