@@ -378,7 +378,11 @@ dd {
 
 .edit-button {
   display: inline-block;
-  padding: 12px 28px;
+  width: 15%;           /* 宽度是父容器的 20% */
+  min-width: 80px;      /* 防止太小 */
+  max-width: 200px;     /* 防止太大 */
+  height: 60px;
+  line-height: 60px;
   background-color: #1a4f9c;
   color: #fff;
   font-weight: bold;
@@ -391,7 +395,6 @@ dd {
 .edit-button:hover {
   background-color: #143a6e;
 }
-
 .skills-list {
   list-style: none;
   padding: 0;

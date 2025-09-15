@@ -94,7 +94,7 @@
             <div v-for="(cert, idx) in certs" :key="idx" class="cert-input">
               <input type="date" v-model="cert.getYmd" />
               <input type="text" v-model="cert.categoryName" placeholder="資格名" />
-              <button type="button" @click="removeCert(idx)" style="width:80px">削除</button>
+              <button type="button" @click="removeCert(idx)" >削除</button>
             </div>
             <button type="button" @click="addCert">資格追加</button>
           </div>
@@ -109,7 +109,7 @@
               <input type="date" v-model="project.projectEnd" />
               <input type="text" v-model="project.projectName" placeholder="プロジェクト名"/>
               <input type="text" v-model="project.projectRole" placeholder="役割" />
-              <button type="button" @click="removeProject(idx)" style="width:80px">削除</button>
+              <button type="button" @click="removeProject(idx)">削除</button>
             </div>
             <button type="button" @click="addProject">プロジェクト追加</button>
           </div>
@@ -616,11 +616,24 @@ textarea {
   resize: vertical;
 }
 
+.form-buttons {
+  all: unset;  
+  display: flex;
+  flex-direction: column; /* 纵向排列 */
+  justify-content: center; /* 主轴对齐（上下方向） */
+  align-items: center;     /* 交叉轴对齐（左右方向） */
+  gap: 16px;
+  margin-top: 30px;
+  
+}
+
 button {
+  all: unset;  
   padding: 10px 20px;
   border-radius: 8px;
   border: none;
   font-weight: bold;
+  text-align: center;
   background-color: #1a4f9c;
   color: #fff;
   cursor: pointer;
@@ -669,7 +682,21 @@ button:hover {
   width: 10%;
   min-width: 150px;
 }
+.cert-input input[type="button"]{
 
+  flex:1;
+  max-width: 50px;
+}
+.project-input input[type="button"] {
+
+  flex:1;
+  max-width: 50px;
+}
+
+.form-buttons button {
+  width: 10%;
+  height: 40px;
+}
 .cert-input input[type="date"]{
   flex:1;
   max-width: 120px;
@@ -705,12 +732,6 @@ button:hover {
   box-shadow: 0 6px 15px rgba(58,84,148,0.25);
 }
 
-.form-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 30px;
-}
 
 @media (max-width: 600px) {
   dl {
