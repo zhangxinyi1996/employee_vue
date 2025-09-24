@@ -90,7 +90,7 @@
               <h3 class="card-title">{{ item.title }}</h3>
               <div class="card-meta">
                 <span class="creator">作成者: {{ item.creatorName }}</span>
-                <span class="date">{{ formatDate(item.createdTime) }}</span>
+                <span class="date">{{ formatDate(item.createdAt) }}</span>
               </div>
               <div class="card-actions">
                 <a 
@@ -105,7 +105,15 @@
                 <span v-else class="description">{{ item.link }}</span>
               </div>
             </div>
+
           </li>
+          
+          <!-- -- 分页按钮 -->
+            <div class="pagination">
+              <button @click="prevPage" :disabled="currentPage === 1">前へ</button>
+              <span>{{ currentPage }} / {{ totalPages }}</span>
+              <button @click="nextPage" :disabled="currentPage === totalPages">次へ</button>
+            </div>
         </ul>
       </section>
 
@@ -278,6 +286,9 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
+import request from '../utils/request'
+import { logoutAndRedirect } from '@/utils/auth'
+import { useRouter } from 'vue-router'
 
 export default {
   data() {
@@ -290,11 +301,15 @@ export default {
     // Reactive data
     const activeTab = ref("learning")
     const isSubmitting = ref(false)
-    
+    const router = useRouter()
     // 学習エリア
     const learningList = ref([])
+    const currentPage = ref(1)
+    const totalPages = ref(1)
+    const pageSize = ref(10)
+    const total = ref(0)
     const newLearning = reactive({ title: "", link: "" })
-    
+    const employeeId = localStorage.getItem("employeeId") || ''
     // Q&A
     const questions = ref([])
     const newQuestion = reactive({ title: "" })
@@ -326,6 +341,35 @@ export default {
     const sortedTrainingList = computed(() => {
       return [...trainingList.value].sort((a, b) => new Date(a.date) - new Date(b.date))
     })
+
+    // Pagination methods
+    function nextPage() {
+      if (currentPage.value * pageSize.value < total.value) {
+        currentPage.value++
+        fetchData()
+      }
+    }
+
+    function prevPage() {
+      if (currentPage.value > 1) {
+        currentPage.value--
+        fetchData()
+      }
+    }
+
+    async function fetchData() {
+      try {
+        const res = await request.get("/learning/show",{
+          params: { page: currentPage.value, size: pageSize.value }
+        })
+        learningList.value = res.records  // 当前页数据
+        currentPage.value = res.page      // 当前页数
+        total.value = res.total          // 总条数
+        totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
+      } catch (error) {
+        console.error("请求learning信息失败:", error);
+      }
+    }
 
     // Methods
     const clearErrors = () => {
@@ -388,17 +432,24 @@ export default {
           id: Date.now(),
           title: newLearning.title,
           link: newLearning.link,
-          creatorName: "現在のユーザー", // TODO: 実際のユーザー情報
-          createdTime: new Date()
+          creatorId:employeeId, // TODO: 実際のユーザー情報
+          creatorName:localStorage.getItem("username") || '', // TODO: 実際のユーザー情報
+          createdAt: new Date().toISOString().slice(0, 19)
         }
         
         learningList.value.unshift(newItem)
+        learningList.value.pop() // 保持总数不变
         Object.assign(newLearning, { title: "", link: "" })
-        
+
+        const learnR = await request.post("/learning/add",newItem)
+        newItem.id = learnR.id
+        total.value += 1
+        totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
         // 成功メッセージ表示
-        showMessage("学習資料を追加しました", "success")
+        //showMessage("学習資料を追加しました", "success")
       } catch (error) {
-        showMessage("追加に失敗しました", "error")
+        //showMessage("追加に失敗しました", "error")
+        console.error("学習資料の追加に失敗しました:", error)
       } finally {
         isSubmitting.value = false
       }
@@ -554,17 +605,14 @@ export default {
     }
 
     const logout = () => {
-      if (confirm("ログアウトしますか？")) {
-        // TODO: 実際のログアウト処理
-        showMessage("ログアウトしました", "success")
-        // this.$router.push("/login")
-      }
+        logoutAndRedirect(router)
     }
       
     // ライフサイクル
     onMounted(() => {
       // TODO: 初期データの読み込み
-      loadInitialData()
+      loadInitialData();
+      fetchData();
     })
 
     const loadInitialData = async () => {
@@ -591,12 +639,20 @@ export default {
       trainingList,
       newTraining,
       errors,
+      currentPage,
+      totalPages,
+      pageSize, 
+      total,
+      employeeId,
       
       // Computed
       today,
       sortedTrainingList,
       
       // Methods
+      fetchData,
+      nextPage,
+      prevPage,
       addLearning,
       addQuestion,
       addAnswer,
@@ -1193,5 +1249,24 @@ select {
 
 /* Fix long URLs/words pushing layout */
 .input-group { word-break: break-word; }
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
 
+.pagination button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>
