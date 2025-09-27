@@ -26,7 +26,7 @@
       <nav class="tabs" role="tablist">
         <button 
           :class="{ active: activeTab === 'learning' }" 
-          @click="activeTab = 'learning'"
+          @click="switchTab('learning')"
           role="tab"
           :aria-selected="activeTab === 'learning'"
         >
@@ -34,7 +34,7 @@
         </button>
         <button 
           :class="{ active: activeTab === 'qa' }" 
-          @click="activeTab = 'qa'"
+          @click="switchTab('qa')"
           role="tab"
           :aria-selected="activeTab === 'qa'"
         >
@@ -42,7 +42,7 @@
         </button>
         <button 
           :class="{ active: activeTab === 'training' }" 
-          @click="activeTab = 'training'"
+          @click="switchTab('training')"
           role="tab"
           :aria-selected="activeTab === 'training'"
         >
@@ -125,7 +125,7 @@
         <form @submit.prevent="addQuestion" class="form-box" novalidate>
           <div class="input-group">
             <textarea 
-              v-model.trim="newQuestion.title" 
+              v-model.trim="newQuestion.content" 
               placeholder="質問内容を詳しく入力してください" 
               required
               rows="3"
@@ -133,7 +133,7 @@
               :class="{ error: errors.questionTitle }"
             ></textarea>
             <span v-if="errors.questionTitle" class="error-message">{{ errors.questionTitle }}</span>
-            <small class="char-count">{{ newQuestion.title.length }}/1000</small>
+            <small class="char-count">{{ newQuestion.content.length }}/1000</small>
           </div>
           <button type="submit" :disabled="isSubmitting">
             {{ isSubmitting ? '投稿中...' : '質問する' }}
@@ -146,10 +146,10 @@
         </div>
         <div v-for="question in questions" :key="question.id" class="qa-card">
           <div class="question-header">
-            <h3 class="question-title">{{ question.title }}</h3>
+            <h3 class="question-title">{{ question.content }}</h3>
             <div class="question-meta">
-              <span class="questioner">{{ question.questionerName }}</span>
-              <span class="date">{{ formatDate(question.createdTime) }}</span>
+              <span class="questioner">{{ question.creatorName }}</span>
+              <span class="date">{{ formatDate(question.createdAt) }}</span>
               <span :class="['status', question.isResolved ? 'resolved' : 'pending']">
                 {{ question.isResolved ? '✅ 解決済み' : '❓ 回答募集中' }}
               </span>
@@ -163,8 +163,8 @@
               <li v-for="answer in question.answers" :key="answer.id" class="answer-item">
                 <div class="answer-content">{{ answer.content }}</div>
                 <div class="answer-meta">
-                  <span class="answerer">{{ answer.answererName }}</span>
-                  <span class="date">{{ formatDate(answer.createdTime) }}</span>
+                  <span class="answerer">{{ answer.creatorName }}</span>
+                  <span class="date">{{ formatDate(answer.createdAt) }}</span>
                   <button @click="likeAnswer(answer.id)" class="like-btn">
                     👍 {{ answer.likeCount || 0 }}
                   </button>
@@ -188,7 +188,13 @@
               回答する
             </button>
           </form>
-        </div>
+        </div> 
+          <!-- -- 分页按钮 -->
+          <div class="pagination">
+            <button @click="prevPage" :disabled="currentPage === 1">前へ</button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button @click="nextPage" :disabled="currentPage === totalPages">次へ</button>
+          </div>
       </section>
 
       <!-- 研修エリア -->
@@ -210,7 +216,7 @@
             </div>
             <div class="input-group">
               <input 
-                v-model="newTraining.date" 
+                v-model="newTraining.trainingDate" 
                 type="date" 
                 required 
                 :min="today"
@@ -256,7 +262,7 @@
           <li v-for="training in sortedTrainingList" :key="training.id" class="list-card training-card">
             <div class="training-header">
               <h3 class="training-title">{{ training.title }}</h3>
-              <div class="training-date">{{ formatTrainingDate(training.date) }}</div>
+              <div class="training-date">{{ formatTrainingDate(training.trainingDate) }}</div>
             </div>
             <div v-if="training.description" class="training-description">
               {{ training.description }}
@@ -273,8 +279,8 @@
               </div>
             </div>
             <div class="training-actions">
-              <span :class="['status', getTrainingStatusClass(training.date)]">
-                {{ getTrainingStatus(training.date) }}
+              <span :class="['status', getTrainingStatusClass(training.trainingDate)]">
+                {{ getTrainingStatus(training.trainingDate) }}
               </span>
             </div>
           </li>
@@ -309,16 +315,20 @@ export default {
     const pageSize = ref(10)
     const total = ref(0)
     const newLearning = reactive({ title: "", link: "" })
+
+    //ユーザー情報
     const employeeId = localStorage.getItem("employeeId") || ''
+    const userName =localStorage.getItem("username") || ''
+
     // Q&A
     const questions = ref([])
-    const newQuestion = reactive({ title: "" })
+    const newQuestion = reactive({ content: "" })
     
     // 研修
     const trainingList = ref([])
     const newTraining = reactive({ 
       title: "", 
-      date: "", 
+      trainingDate: "", 
       instructor: "",
       location: "",
       description: ""
@@ -333,6 +343,13 @@ export default {
       trainingDate: ""
     })
 
+    // 切换 tab 的方法
+    const switchTab = (tabName) => {
+      activeTab.value = tabName;
+      currentPage.value = 1
+      fetchData();
+    };
+
     // Computed properties
     const today = computed(() => {
       return new Date().toISOString().split('T')[0]
@@ -342,7 +359,7 @@ export default {
       return [...trainingList.value].sort((a, b) => new Date(a.date) - new Date(b.date))
     })
 
-    // Pagination methods
+    // Pagination methods for learningList
     function nextPage() {
       if (currentPage.value * pageSize.value < total.value) {
         currentPage.value++
@@ -358,17 +375,46 @@ export default {
     }
 
     async function fetchData() {
-      try {
-        const res = await request.get("/learning/show",{
-          params: { page: currentPage.value, size: pageSize.value }
-        })
-        learningList.value = res.records  // 当前页数据
-        currentPage.value = res.page      // 当前页数
-        total.value = res.total          // 总条数
-        totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
-      } catch (error) {
-        console.error("请求learning信息失败:", error);
+      
+      if (activeTab.value === 'learning') {
+        
+        try {
+          const res = await request.get("/learning/show",{
+            params: { page: currentPage.value, size: pageSize.value }
+          })
+          learningList.value = res.records  // 当前页数据
+          currentPage.value = res.page      // 当前页数
+          total.value = res.total          // 总条数
+          totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
+        } catch (error) {
+          console.error("请求learning信息失败:", error);
+        }
+
+          
+        try {
+          const resQa = await request.get("/skillQA/show",{
+            params: { page: currentPage.value, size: pageSize.value }
+          })
+          questions.value = resQa.records  // 当前页数据
+          currentPage.value = resQa.page      // 当前页数
+          total.value = resQa.total          // 总条数
+          totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
+        } catch (error) {
+          console.error("请求skill questions失败:", error);
+        }
+
+      }else if (activeTab.value === 'training') {
+        try {
+          const res = await request.get("/training/show")
+          trainingList.value = res.records
+        } catch (error) {
+          console.error("请求training信息失败:", error);
+        }
+      }else{
+        console.error("未知的tab类型:", activeTab.value);
       }
+
+
     }
 
     // Methods
@@ -395,7 +441,7 @@ export default {
 
     const validateQuestion = () => {
       clearErrors()
-      if (!newQuestion.title.trim()) {
+      if (!newQuestion.content.trim()) {
         errors.questionTitle = "質問内容を入力してください"
         return false
       }
@@ -411,10 +457,10 @@ export default {
         isValid = false
       }
       
-      if (!newTraining.date) {
+      if (!newTraining.trainingDate) {
         errors.trainingDate = "研修日付を選択してください"
         isValid = false
-      } else if (new Date(newTraining.date) < new Date()) {
+      } else if (new Date(newTraining.trainingDate) < new Date()) {
         errors.trainingDate = "未来の日付を選択してください"
         isValid = false
       }
@@ -433,12 +479,14 @@ export default {
           title: newLearning.title,
           link: newLearning.link,
           creatorId:employeeId, // TODO: 実際のユーザー情報
-          creatorName:localStorage.getItem("username") || '', // TODO: 実際のユーザー情報
+          creatorName:userName, // TODO: 実際のユーザー情報
           createdAt: new Date().toISOString().slice(0, 19)
         }
         
         learningList.value.unshift(newItem)
-        learningList.value.pop() // 保持总数不变
+        if (learningList.value.length > pageSize.value)  {
+        learningList.value.pop(); // 保持总数不变
+        }
         Object.assign(newLearning, { title: "", link: "" })
 
         const learnR = await request.post("/learning/add",newItem)
@@ -463,27 +511,36 @@ export default {
         // TODO: API呼び出しをここに実装
         const newQ = {
           id: Date.now(),
-          title: newQuestion.title,
+          content: newQuestion.content,
           answers: [],
           newAnswer: "",
-          questionerName: "現在のユーザー", // TODO: 実際のユーザー情報
-          createdTime: new Date(),
-          isResolved: false
+          creatorId: employeeId, // TODO: 実際のユーザー情報
+          creatorName: userName, // TODO: 実際のユーザー情報
+          createdAt: new Date().toISOString().slice(0, 19),
+          isResolved: 0
         }
         
         questions.value.unshift(newQ)
-        newQuestion.title = ""
-        
-        showMessage("質問を投稿しました", "success")
+        newQuestion.content = ""
+        if (questions.value.length > pageSize.value)  {
+          questions.value.pop(); // 保持总数不变
+        }
+
+        const questionsRes = await request.post("/skillQA/add",newQ)
+        newQ.id = questionsRes.id
+        total.value += 1
+        totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
+        //showMessage("質問を投稿しました", "success")
       } catch (error) {
-        showMessage("投稿に失敗しました", "error")
+        //showMessage("投稿に失敗しました", "error")
+        console.error("質問の追加に失敗しました:", error)
       } finally {
         isSubmitting.value = false
       }
     }
 
-    const addAnswer = async (questionId) => {
-      const question = questions.value.find(q => q.id === questionId)
+    const addAnswer = async (quId) => {
+      const question = questions.value.find(q => q.id === quId)
       if (!question?.newAnswer?.trim()) return
       
       try {
@@ -491,17 +548,20 @@ export default {
         const newAnswer = {
           id: Date.now(),
           content: question.newAnswer,
-          answererName: "現在のユーザー", // TODO: 実際のユーザー情報
-          createdTime: new Date(),
+          questionId: quId,
+          creatorId: employeeId, // TODO: 実際のユーザー情報
+          creatorName: userName, // TODO: 実際のユーザー情報
+          createdAt: new Date().toISOString().slice(0, 19),
           likeCount: 0
         }
         
         question.answers.push(newAnswer)
         question.newAnswer = ""
-        
-        showMessage("回答を投稿しました", "success")
+        const quRes = await request.post("/skillQA/add",question)
+        newAnswer.id = quRes.answers[0].id
+        //showMessage("回答を投稿しました", "success")
       } catch (error) {
-        showMessage("回答の投稿に失敗しました", "error")
+        //showMessage("回答の投稿に失敗しました", "error")
       }
     }
 
@@ -514,26 +574,27 @@ export default {
         const newT = {
           id: Date.now(),
           title: newTraining.title,
-          date: newTraining.date,
+          trainingDate: newTraining.trainingDate,
           instructor: newTraining.instructor,
           location: newTraining.location,
           description: newTraining.description,
-          creatorName: "現在のユーザー", // TODO: 実際のユーザー情報
-          createdTime: new Date()
+          creatorId: employeeId, // TODO: 実際のユーザー情報
+          creatorName: userName // TODO: 実際のユーザー情報
         }
         
         trainingList.value.push(newT)
         Object.assign(newTraining, { 
           title: "", 
-          date: "", 
+          trainingDate: "", 
           instructor: "",
           location: "",
           description: ""
         })
-        
-        showMessage("研修を登録しました", "success")
+        const trainingRes = await request.post("/training/add",newT)
+        newT.id = trainingRes.id
+        //showMessage("研修を登録しました", "success")
       } catch (error) {
-        showMessage("登録に失敗しました", "error")
+        //showMessage("登録に失敗しました", "error")
       } finally {
         isSubmitting.value = false
       }
@@ -650,6 +711,7 @@ export default {
       sortedTrainingList,
       
       // Methods
+      switchTab,
       fetchData,
       nextPage,
       prevPage,
