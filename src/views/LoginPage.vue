@@ -1,8 +1,8 @@
 <template>
   <div class="login-container">
     <h2>ログイン</h2>
-    <li>
-      <LanguageSwitcher/>
+    <li class="language-switcher-wrapper"> 
+    <LanguageSwitcher/>
     </li>
     <form @submit.prevent="handleLogin">
       <div class="input-group">
@@ -204,5 +204,27 @@ input:focus {
   font-size: 11px;
   color: #999;
   margin-top: 30px;
+}
+.language-switcher-wrapper {
+  list-style: none;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: flex-end; /* 右寄せ */
+}
+
+.language-switcher-wrapper select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f8f8f8;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.language-switcher-wrapper select:hover {
+  border-color: #4a90e2;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(74,144,226,0.3);
 }
 </style>

@@ -4,9 +4,6 @@
     <nav class="main-nav">
       <ul>
         <li>
-          <LanguageSwitcher/>
-        </li>
-        <li>
           <router-link to="/top">{{ $t('nav.home') }}</router-link>
         </li>
         <li>
@@ -23,6 +20,9 @@
         </li>
         <li>
           <router-link to="/exchange_area">{{ $t('nav.exchange') }}</router-link>
+        </li>
+         <li class="language-switcher-wrapper"> 
+          <LanguageSwitcher/>
         </li>
         <li class="logout"><a href="#" @click.prevent="logout">{{ $t('nav.logout') }}</a></li>
       </ul>
@@ -217,10 +217,13 @@ body {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .main-nav li {
   margin: 0;
+  align-items: center; 
+  display: flex;
 }
 
 .main-nav a {
@@ -322,6 +325,10 @@ footer {
   padding: 20px;
   color: #666;
   font-size: 14px;
+}
+.main-nav .language-switcher-wrapper {
+  margin-left: auto; /* これで右端に寄せる */
+  margin-right: 800px; 
 }
 
 @media (max-width: 600px) {
