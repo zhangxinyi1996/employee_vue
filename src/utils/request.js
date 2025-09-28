@@ -13,6 +13,10 @@ instance.interceptors.request.use(
         if (token) {
             config.headers.Authorization = 'Bearer ' + token
         }
+        // 带上当前语言，后端按此返回中文/日文
+        const locale = localStorage.getItem('locale') || 'ja'
+        const lang = locale === 'zh' ? 'zh-CN' : 'ja-JP'
+        config.headers['Accept-Language'] = lang
         return config
     },
     error => Promise.reject(error)

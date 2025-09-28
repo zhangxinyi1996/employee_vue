@@ -1,6 +1,9 @@
 <template>
   <div class="login-container">
     <h2>ログイン</h2>
+    <li>
+      <LanguageSwitcher/>
+    </li>
     <form @submit.prevent="handleLogin">
       <div class="input-group">
         <input v-model="username" type="text" placeholder="ユーザー名" required />
@@ -37,6 +40,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 
 const username = ref('')
 const password = ref('')
