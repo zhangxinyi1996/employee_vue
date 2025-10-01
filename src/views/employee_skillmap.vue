@@ -21,28 +21,46 @@
         <h2>個別スキル分析</h2>
 
         <div class="select-group" role="region" aria-label="個別従業員選択">
-          <select v-model="selectedEmployee1">
+          <select v-model="selectedEmployee1" :disabled="isLoading || employees.length === 0">
+            <option value="">--選択--</option>
             <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
           </select>
         </div>
 
-        <dl class="basic-info">
-          <template v-if="currentEmployee">
-            <template v-for="(val, key) in currentEmployee.basicInfo" :key="key">
-              <dt>{{ key }}</dt>
-              <dd>{{ val }}</dd>
-            </template>
-          </template>
+        <!-- 加载指示器 -->
+        <div v-if="isLoading" class="loading-indicator">
+          <div class="loading-spinner"></div>
+          <p>データを読み込んでいます...</p>
+        </div>
+        
+        <!-- 基本情報 -->
+        <dl class="basic-info" v-else-if="currentEmployee">
+          <dt>氏名</dt>
+          <dd>{{ currentEmployee.name }}</dd>
+          <dt>部署</dt>
+          <dd>{{ currentEmployee.department }}</dd>
+          <dt>役職</dt>
+          <dd>{{ currentEmployee.position }}</dd>
+          <dt v-if="currentEmployee.experience !== undefined">仕事年数</dt>
+          <dd v-if="currentEmployee.experience !== undefined">{{ currentEmployee.experience }}年</dd>
+          <dt v-if="currentEmployee.gender">性別</dt>
+          <dd v-if="currentEmployee.gender">{{ currentEmployee.gender }}</dd>
         </dl>
 
         <h3>カテゴリ別平均スキルレベル</h3>
-        <div class="chart-container" v-if="categoryBarChartData.labels.length">
-          <BarChart :chart-data="categoryBarChartData" :chart-options="barChartOptions" />
+        <div class="chart-container">
+          <BarChart :chartData="categoryBarChartData" :chartOptions="barChartOptions" />
+          <div v-if="!isLoading && employees.length > 0 && categoryBarChartData && categoryBarChartData.labels && categoryBarChartData.labels.length === 0" class="no-data">
+            表示するスキルデータがありません
+          </div>
         </div>
 
         <h3>上位スキルレーダーチャート</h3>
-        <div class="chart-container" v-if="topSkillsRadarData.labels.length">
-          <RadarChart :chart-data="topSkillsRadarData" :chart-options="radarChartOptions" />
+        <div class="chart-container">
+          <RadarChart :chartData="topSkillsRadarData" :chartOptions="radarChartOptions" />
+          <div v-if="!isLoading && employees.length > 0 && topSkillsRadarData && topSkillsRadarData.labels && topSkillsRadarData.labels.length === 0" class="no-data">
+            表示するスキルデータがありません
+          </div>
         </div>
       </section>
 
@@ -51,28 +69,34 @@
         <h2>複数従業員比較（最大3名）</h2>
 
         <div class="select-group" role="region" aria-label="複数従業員選択">
-          <select v-model="selectedEmployee2">
+          <select v-model="selectedEmployee2" :disabled="isLoading || employees.length === 0">
             <option value="">--選択--</option>
             <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
           </select>
-          <select v-model="selectedEmployee3">
+          <select v-model="selectedEmployee3" :disabled="isLoading || employees.length === 0">
             <option value="">--選択--</option>
             <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
           </select>
-          <select v-model="selectedEmployee4">
+          <select v-model="selectedEmployee4" :disabled="isLoading || employees.length === 0">
             <option value="">--選択--</option>
             <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
           </select>
         </div>
 
         <h3>カテゴリ別平均スキルレベル比較</h3>
-        <div class="chart-container" v-if="multiCategoryBarData.labels.length">
-          <BarChart :chart-data="multiCategoryBarData" :chart-options="barChartOptions" />
+        <div class="chart-container">
+          <BarChart :chartData="multiCategoryBarData" :chartOptions="barChartOptions" />
+          <div v-if="!isLoading && employees.length > 0 && multiCategoryBarData && multiCategoryBarData.labels && multiCategoryBarData.labels.length === 0" class="no-data">
+            比較する従業員を選択してください
+          </div>
         </div>
 
         <h3>主要スキルレーダーチャート比較</h3>
-        <div class="chart-container" v-if="multiTopSkillsRadarData.labels.length">
-          <RadarChart :chart-data="multiTopSkillsRadarData" :chart-options="radarChartOptions" />
+        <div class="chart-container">
+          <RadarChart :chartData="multiTopSkillsRadarData" :chartOptions="radarChartOptions" />
+          <div v-if="!isLoading && employees.length > 0 && multiTopSkillsRadarData && multiTopSkillsRadarData.labels && multiTopSkillsRadarData.labels.length === 0" class="no-data">
+            比較する従業員を選択してください
+          </div>
         </div>
       </section>
     </div>
@@ -80,115 +104,332 @@
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { Chart as ChartJS, Title, Tooltip, Legend, RadialLinearScale, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Filler } from "chart.js";
 import { Bar, Radar } from "vue-chartjs";
+import request from '@/utils/request'
+import { logoutAndRedirect } from '@/utils/auth'
 
 ChartJS.register(Title, Tooltip, Legend, RadialLinearScale, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Filler);
+
+// 安全なバーチャートコンポーネント
+const SafeBarChart = {
+  props: {
+    chartData: {
+      type: Object,
+      required: true,
+      default: () => ({ labels: [], datasets: [] })
+    },
+    chartOptions: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    }
+  },
+  components: { Bar },
+  template: `
+    <div class="safe-chart-container">
+      <Bar :key="chartKey" :data="validChartData" :options="chartOptions" />
+    </div>
+  `,
+  computed: {
+    chartKey() {
+      // データが更新されるたびに異なるキーを生成し、コンポーネントを再作成
+      return JSON.stringify(this.chartData);
+    },
+    validChartData() {
+      console.log (this.chartData, 'chartData=====')
+      // デフォルトデータを提供し、データが存在しない場合のエラーを防止
+      if (!this.chartData) return { labels: [], datasets: [] };
+      
+      const labels = this.chartData.labels && Array.isArray(this.chartData.labels) 
+        ? this.chartData.labels 
+        : [];
+      
+      const datasets = this.chartData.datasets && Array.isArray(this.chartData.datasets) 
+        ? this.chartData.datasets 
+        : [];
+      
+      return { labels, datasets };
+    }
+  }
+};
+
+// 安全なレーダーチャートコンポーネント
+const SafeRadarChart = {
+  props: {
+    chartData: {
+      type: Object,
+      required: true,
+      default: () => ({ labels: [], datasets: [] })
+    },
+    chartOptions: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    }
+  },
+  components: { Radar },
+  template: `
+    <div class="safe-chart-container">
+      <Radar :key="chartKey" :data="validChartData" :options="chartOptions" />
+    </div>
+  `,
+  computed: {
+    chartKey() {
+      // データが更新されるたびに異なるキーを生成し、コンポーネントを再作成
+      return JSON.stringify(this.chartData);
+    },
+    validChartData() {
+      // デフォルトデータを提供し、データが存在しない場合のエラーを防止
+      if (!this.chartData) return { labels: [], datasets: [] };
+      
+      const labels = this.chartData.labels && Array.isArray(this.chartData.labels) 
+        ? this.chartData.labels 
+        : [];
+      
+      const datasets = this.chartData.datasets && Array.isArray(this.chartData.datasets) 
+        ? this.chartData.datasets 
+        : [];
+      
+      return { labels, datasets };
+    }
+  }
+};
 
 export default {
   name: "EmployeeSkillMap",
   components: {
-    BarChart: Bar,
-    RadarChart: Radar
+    BarChart: SafeBarChart,
+    RadarChart: SafeRadarChart
   },
   setup() {
-    const employees = ref([
-      {
-        id: "yamada",
-        name: "山田 太郎",
-        basicInfo: { "氏名": "山田 太郎", "部署": "開発部", "役職": "シニアエンジニア" },
-        skills: [
-          { name: "Java", level: 6, category: "プログラミング言語" },
-          { name: "Python", level: 5, category: "プログラミング言語" },
-          { name: "JavaScript", level: 7, category: "プログラミング言語" },
-          { name: "AWS", level: 6, category: "クラウド" },
-          { name: "MySQL", level: 7, category: "データベース" }
-        ]
-      },
-      {
-        id: "sato",
-        name: "佐藤 一郎",
-        basicInfo: { "氏名": "佐藤 一郎", "部署": "開発部", "役職": "マネージャー" },
-        skills: [
-          { name: "Java", level: 7, category: "プログラミング言語" },
-          { name: "Python", level: 4, category: "プログラミング言語" },
-          { name: "AWS", level: 7, category: "クラウド" }
-        ]
-      },
-      {
-        id: "suzuki",
-        name: "鈴木 花子",
-        basicInfo: { "氏名": "鈴木 花子", "部署": "企画部", "役職": "プロジェクトリーダー" },
-        skills: [
-          { name: "JavaScript", level: 7, category: "プログラミング言語" },
-          { name: "TypeScript", level: 6, category: "プログラミング言語" },
-          { name: "AWS", level: 5, category: "クラウド" }
-        ]
-      }
-    ]);
-
-    const selectedEmployee1 = ref(employees.value[0].id);
-    const selectedEmployee2 = ref(employees.value[1].id);
-    const selectedEmployee3 = ref(employees.value[2].id);
+    const employees = ref([]);
+    const isLoading = ref(false);
+    const skillAnalysisData = ref({});
+    const multiEmployeeSkills = ref({});
+    
+    const selectedEmployee1 = ref("");
+    const selectedEmployee2 = ref("");
+    const selectedEmployee3 = ref("");
     const selectedEmployee4 = ref("");
+    
+    // 获取员工数据
+    const fetchEmployees = async () => {
+      try {
+        isLoading.value = true;
+        const response = await request.post('/employee/search', {});
+        console.log('取得した従業員データ:', response);
+        employees.value = response || [];
+        
+        // 设置默认选中的员工
+        if (employees.value.length > 0) {
+          selectedEmployee1.value = employees.value[0].id;
+          if (employees.value.length > 1) {
+            selectedEmployee2.value = employees.value[1].id;
+          }
+          if (employees.value.length > 2) {
+            selectedEmployee3.value = employees.value[2].id;
+          }
+        }
+      } catch (error) {
+        console.error('従業員データの取得エラー:', error.response?.data || error.message);
+      } finally {
+        isLoading.value = false;
+      }
+    };
 
-    const currentEmployee = computed(() => employees.value.find(emp => emp.id === selectedEmployee1.value));
+    // 获取单个员工技能分析
+    const fetchEmployeeSkillAnalysis = async (employeeId) => {
+      if (!employeeId) {
+        skillAnalysisData.value = {};
+        return;
+      }
 
-    // 個別チャートデータ
-    const categoryBarChartData = computed(() => {
-      if (!currentEmployee.value) return { labels: [], datasets: [] };
-      const catMap = {};
-      currentEmployee.value.skills.forEach(s => {
-        if (!catMap[s.category]) catMap[s.category] = [];
-        catMap[s.category].push(s.level);
-      });
-      const labels = Object.keys(catMap);
-      const data = labels.map(cat => (catMap[cat].reduce((a,b)=>a+b,0)/catMap[cat].length).toFixed(2));
-      return { labels, datasets: [{ label: "平均スキルレベル", data, backgroundColor: "rgba(63,108,237,0.7)" }] };
+      try {
+        isLoading.value = true;
+        const response = await request.get(`/employee/skill-analysis/by-employee/${employeeId}`);
+        console.log('単一従業員のスキル分析データ:', response);
+        // レスポンスデータの構造を確認し、チャートデータに適した形式に変換
+        if (response && response.code === 200 && response.data) {
+          skillAnalysisData.value = response.data;
+        } else {
+          // レスポンスが予期しない形式の場合、デフォルトの空オブジェクトを使用
+          skillAnalysisData.value = response || {};
+        }
+      } catch (error) {
+        console.error('単一従業員スキル分析の取得エラー:', error.response?.data || error.message);
+        skillAnalysisData.value = {};
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
+    // 获取多个员工技能比较
+    const fetchMultiEmployeeSkills = async () => {
+      const employeeIds = [selectedEmployee2.value, selectedEmployee3.value, selectedEmployee4.value].filter(id => id);
+      if (employeeIds.length === 0) {
+        multiEmployeeSkills.value = {};
+        return;
+      }
+
+      try {
+        isLoading.value = true;
+        const response = await request.post('/employee/skill-analysis/by-employees', { employeeIds });
+        console.log('複数従業員のスキル比較データ:', response);
+        // レスポンスデータの構造を確認し、チャートデータに適した形式に変換
+        if (response && response.code === 200 && response.data) {
+          multiEmployeeSkills.value = response.data;
+        } else {
+          // レスポンスが予期しない形式の場合、デフォルトの空オブジェクトを使用
+          multiEmployeeSkills.value = response || {};
+        }
+      } catch (error) {
+        console.error('複数従業員スキル比較の取得エラー:', error.response?.data || error.message);
+        multiEmployeeSkills.value = {};
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
+    // 组件挂载时获取数据
+    onMounted(() => {
+      fetchEmployees();
+    });
+    
+    // ログアウト処理
+    const logout = () => {
+      logoutAndRedirect();
+    };
+
+    const currentEmployee = computed(() => {
+      if (!employees.value || !selectedEmployee1.value) return null;
+      return employees.value.find(emp => emp.id === selectedEmployee1.value) || null;
     });
 
-    const topSkillsRadarData = computed(() => {
-      if (!currentEmployee.value) return { labels: [], datasets: [] };
-      const sortedSkills = [...currentEmployee.value.skills].sort((a,b)=>b.level-a.level).slice(0,10);
+    // 個別チャートデータ - 使用后端API数据
+    const categoryBarChartData = computed(() => {
+      if (!skillAnalysisData.value || !skillAnalysisData.value.categoryAverage) {
+        return { labels: [], datasets: [] };
+      }
+      
+      const { categoryAverage, employee } = skillAnalysisData.value;
+      
+      const labels = Object.keys(categoryAverage);
+      const data = labels.map(category => categoryAverage[category]);
+      
       return {
-        labels: sortedSkills.map(s=>s.name),
-        datasets: [{ label: currentEmployee.value.name, data: sortedSkills.map(s=>s.level), backgroundColor:"rgba(63,108,237,0.3)", borderColor:"rgba(63,108,237,0.7)", fill:true }]
+        labels,
+        datasets: [{
+          label: employee?.name || '社員' + ' のスキルレベル',
+          data,
+          backgroundColor: 'rgba(63,108,237,0.6)',
+          borderColor: 'rgba(63,108,237,1)',
+          borderWidth: 1
+        }]
       };
     });
 
-    // 複数比較チャートデータ
-    const multiCategoryBarData = computed(() => {
-      const selectedIds = [selectedEmployee2.value, selectedEmployee3.value, selectedEmployee4.value].filter(Boolean);
-      if (!selectedIds.length) return { labels: [], datasets: [] };
-      const emps = selectedIds.map(id => employees.value.find(e => e.id===id)).filter(Boolean);
-      const allCats = [...new Set(emps.flatMap(emp=>emp.skills.map(s=>s.category)))];
-      const datasets = emps.map((emp,idx)=>({
-        label: emp.name,
-        data: allCats.map(cat => {
-          const arr = emp.skills.filter(s=>s.category===cat).map(s=>s.level);
-          return arr.length ? +(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2) : 0;
-        }),
-        backgroundColor: ["rgba(63,108,237,0.7)","rgba(234,91,91,0.7)","rgba(91,192,222,0.7)"][idx]
-      }));
-      return { labels: allCats, datasets };
+    const topSkillsRadarData = computed(() => {
+      if (!skillAnalysisData.value || !skillAnalysisData.value.skills || !Array.isArray(skillAnalysisData.value.skills)) {
+        return { labels: [], datasets: [] };
+      }
+      
+      // スキルレベルが3以上のものを取得し、上位10個までを表示
+      const topSkills = skillAnalysisData.value.skills
+        .filter(skill => skill.level >= 3)
+        .sort((a, b) => b.level - a.level)
+        .slice(0, 10);
+      
+      const labels = topSkills.map(skill => skill.name);
+      const data = topSkills.map(skill => skill.level);
+      
+      return {
+        labels,
+        datasets: [{
+          label: skillAnalysisData.value.employee?.name || '社員' + ' の主要スキル',
+          data,
+          backgroundColor: 'rgba(63,108,237,0.2)',
+          borderColor: 'rgba(63,108,237,0.8)',
+          borderWidth: 1,
+          pointBackgroundColor: 'rgba(63,108,237,1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(63,108,237,1)'
+        }]
+      };
     });
 
-    const multiTopSkillsRadarData = computed(() => {
-      const selectedIds = [selectedEmployee2.value, selectedEmployee3.value, selectedEmployee4.value].filter(Boolean);
-      if (!selectedIds.length) return { labels: [], datasets: [] };
-      const emps = selectedIds.map(id => employees.value.find(e => e.id===id)).filter(Boolean);
+    // 複数比較チャートデータ - 使用后端API数据
+    const multiCategoryBarData = computed(() => {
+      if (!multiEmployeeSkills.value || !Array.isArray(multiEmployeeSkills.value)) {
+        return { labels: [], datasets: [] };
+      }
+      
+      const validEmployees = multiEmployeeSkills.value.filter(emp => emp.skills && Array.isArray(emp.skills));
+      if (validEmployees.length === 0) return { labels: [], datasets: [] };
+      
+      // スキルカテゴリを判断するヘルパー関数
       const skillMap = {};
-      emps.flatMap(emp => emp.skills).forEach(s => skillMap[s.name] = Math.max(skillMap[s.name]||0,s.level));
+      validEmployees.flatMap(emp => emp.skills).forEach(s => skillMap[s.name] = Math.max(skillMap[s.name]||0,s.level));
       const topSkills = Object.entries(skillMap).sort((a,b)=>b[1]-a[1]).slice(0,15).map(s=>s[0]);
-      const datasets = emps.map((emp,idx)=>({
+      
+      const datasets = validEmployees.map((emp,idx)=>({
         label: emp.name,
-        data: topSkills.map(name => emp.skills.find(s=>s.name===name)?.level||0),
-        backgroundColor: ["rgba(63,108,237,0.3)","rgba(234,91,91,0.3)","rgba(91,192,222,0.3)"][idx],
-        borderColor: ["rgba(63,108,237,0.7)","rgba(234,91,91,0.7)","rgba(91,192,222,0.7)"][idx],
+        data: topSkills.map(name => {
+          const skill = emp.skills.find(s=>s.name===name);
+          return skill ? skill.level : 0;
+        }),
+        backgroundColor: ["rgba(63,108,237,0.3)","rgba(234,91,91,0.3)","rgba(91,192,222,0.3)"][idx % 3],
+        borderColor: ["rgba(63,108,237,0.7)","rgba(234,91,91,0.7)","rgba(91,192,222,0.7)"][idx % 3],
         fill: true
       }));
+      
       return { labels: topSkills, datasets };
+    });
+
+    // 缺少的multiTopSkillsRadarData计算属性
+    const multiTopSkillsRadarData = computed(() => {
+      if (!multiEmployeeSkills.value || !Array.isArray(multiEmployeeSkills.value)) {
+        return { labels: [], datasets: [] };
+      }
+      
+      const validEmployees = multiEmployeeSkills.value.filter(emp => emp.skills && Array.isArray(emp.skills));
+      if (validEmployees.length === 0) return { labels: [], datasets: [] };
+      
+      // 收集所有员工的技能并找出共同的主要技能
+      const skillMap = {};
+      validEmployees.flatMap(emp => emp.skills).forEach(s => {
+        if (s.level >= 3) { // 只考虑3级以上的技能
+          skillMap[s.name] = (skillMap[s.name] || 0) + 1;
+        }
+      });
+      
+      // 选择出现在多个员工中的技能或最常见的技能
+      const commonSkills = Object.entries(skillMap)
+        .filter(([, count]) => count >= 1) // 只解构需要的count参数，忽略name
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8) // 限制最多8个技能
+        .map(([name]) => name);
+      
+      if (commonSkills.length === 0) return { labels: [], datasets: [] };
+      
+      const datasets = validEmployees.map((emp, idx) => ({
+        label: emp.name,
+        data: commonSkills.map(name => {
+          const skill = emp.skills.find(s => s.name === name);
+          return skill ? skill.level : 0;
+        }),
+        backgroundColor: [`rgba(63,108,237,${0.1 + idx * 0.1})`, `rgba(234,91,91,${0.1 + idx * 0.1})`, `rgba(91,192,222,${0.1 + idx * 0.1})`][idx % 3],
+        borderColor: [`rgba(63,108,237,${0.6 + idx * 0.1})`, `rgba(234,91,91,${0.6 + idx * 0.1})`, `rgba(91,192,222,${0.6 + idx * 0.1})`][idx % 3],
+        borderWidth: 2,
+        pointBackgroundColor: [`rgba(63,108,237,1)`, `rgba(234,91,91,1)`, `rgba(91,192,222,1)`][idx % 3],
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: [`rgba(63,108,237,1)`, `rgba(234,91,91,1)`, `rgba(91,192,222,1)`][idx % 3]
+      }));
+      
+      return { labels: commonSkills, datasets };
     });
 
     const barChartOptions = {
@@ -203,6 +444,33 @@ export default {
       plugins: { legend:{ position:"top" } }
     };
 
+    // チャートデータのログ追加
+    watch(categoryBarChartData, (newData) => {
+      console.log('カテゴリバーチャートデータ:', newData);
+    }, { deep: true });
+
+    watch(topSkillsRadarData, (newData) => {
+      console.log('主要スキルレーダーチャートデータ:', newData);
+    }, { deep: true });
+
+    watch(multiCategoryBarData, (newData) => {
+      console.log('複数比較カテゴリバーチャートデータ:', newData);
+    }, { deep: true });
+
+    watch(multiTopSkillsRadarData, (newData) => {
+      console.log('複数比較主要スキルレーダーチャートデータ:', newData);
+    }, { deep: true });
+
+    // 监听员工选择变化，更新技能分析数据
+    watch(selectedEmployee1, (newValue) => {
+      fetchEmployeeSkillAnalysis(newValue);
+    });
+    
+    // 监听多个员工选择变化，更新技能比较数据
+    watch([selectedEmployee2, selectedEmployee3, selectedEmployee4], () => {
+      fetchMultiEmployeeSkills();
+    });
+
     return {
       employees,
       selectedEmployee1,
@@ -215,7 +483,9 @@ export default {
       multiCategoryBarData,
       multiTopSkillsRadarData,
       barChartOptions,
-      radarChartOptions
+      radarChartOptions,
+      isLoading,
+      logout
     };
   }
 };
@@ -275,6 +545,53 @@ body {
 }
 .main-nav .logout a:hover {
   background-color: #b52b27;
+}
+
+/* 加载指示器 */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #1a4f9c;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e7ff;
+  border-top: 4px solid #1a4f9c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 无数据提示 */
+.no-data {
+  text-align: center;
+  color: #777;
+  padding: 40px 20px !important;
+  font-style: italic;
+  font-size: 16px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 安全チャートコンテナ */
+.safe-chart-container {
+  width: 100%;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .container {
   max-width: 1000px;
