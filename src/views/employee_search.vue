@@ -55,6 +55,12 @@
           <option value="その他">その他</option>
         </select>
 
+        <label for="departmentSelect">部署</label>
+        <select id="departmentSelect" v-model="department">
+          <option value="">指定なし</option>
+          <option v-for="dept in departments" :key="dept" :value="dept">{{ dept }}</option>
+        </select>
+
         <label for="minAge">年齢（最小）</label>
         <input type="number" id="minAge" v-model.number="minAge" min="18" max="100" />
 
@@ -74,7 +80,11 @@
         検索結果：{{ filteredEmployees.length }} 件（上位10件まで表示）
       </div>
 
-      <table aria-label="検索結果テーブル">
+      <div v-if="isLoading" class="loading-indicator">
+        <div class="loading-spinner"></div>
+        <p>検索中...</p>
+      </div>
+      <table v-else aria-label="検索結果テーブル">
         <thead>
           <tr>
             <th>氏名</th>
@@ -89,9 +99,7 @@
         </thead>
         <tbody>
           <tr v-if="filteredEmployees.length === 0">
-            <td colspan="8" style="text-align:center; color:#777;">
-              条件に一致する従業員は見つかりませんでした。
-            </td>
+            <td colspan="8" class="no-data">検索結果がありません</td>
           </tr>
           <tr v-for="emp in topFilteredEmployees" :key="emp.id">
             <td>{{ emp.name }}</td>
@@ -100,7 +108,7 @@
             <td>{{ emp.gender }}</td>
             <td>{{ calcAge(emp.birthYear) }}</td>
             <td>{{ emp.experience }}</td>
-            <td>{{ emp.skills.map(s => s.name).join(', ') }}</td>
+            <td>{{ emp.skills && Array.isArray(emp.skills) ? emp.skills.map(s => s.name).join(', ') : '' }}</td>
             <td>
               <button type="button" class="info-btn" @click="openModal(emp)">詳細</button>
             </td>
@@ -135,6 +143,7 @@
 
 <script>
 import { logoutAndRedirect } from '@/utils/auth'
+import request from '@/utils/request'
 export default {
   name: 'EmployeeManagement',
   data() {
@@ -148,41 +157,10 @@ export default {
       maxAge: 70,
       minExperience: 0,
       maxExperience: 50,
-      employees: [
-        {
-          id: 'tanaka',
-          name: '田中 一郎',
-          birthYear: 1982,
-          gender: '男性',
-          experience: 13,
-          department: '開発部',
-          position: 'エンジニア',
-          skills: [
-            { name: 'Java', category: 'language', level: '上級', expYears: 8 },
-            { name: 'Spring', category: 'framework', level: '中級', expYears: 6 },
-            { name: 'MySQL', category: 'other', level: '上級', expYears: 9 }
-          ],
-          basicInfo: { /* 省略：先ほどのHTMLと同じ */ },
-          qualifications: ['基本情報技術者（2015年）','応用情報技術者（2017年）','AWS認定ソリューションアーキテクト（2019年）'],
-          projects: [{ name: '受注管理システム開発', period: '2018/4～2019/3', role: 'リードエンジニア' }]
-        },
-        {
-          id: 'kobayashi',
-          name: '小林 花子',
-          birthYear: 1992,
-          gender: '女性',
-          experience: 5,
-          department: '営業部',
-          position: '営業担当',
-          skills: [
-            { name: '営業', category: 'other', level: '上級', expYears: 7 },
-            { name: 'コミュニケーション', category: 'other', level: 'エキスパート', expYears: 10 }
-          ],
-          basicInfo: { /* 省略 */ },
-          qualifications: ['宅地建物取引士（2016年）','販売士2級（2015年）'],
-          projects: [{ name: '新規顧客開拓プロジェクト', period: '2019/5～2020/6', role: 'リーダー' }]
-        }
-      ],
+      department: '',
+      employees: [],
+      departments: [],
+      isLoading: false,
       isModalActive: false,
       modalEmployeeInfo: {}
     }
@@ -191,41 +169,51 @@ export default {
     filteredSkills() {
       const allSkillsMap = new Map();
       this.employees.forEach(emp => {
-        emp.skills.forEach(s => {
-          if (this.selectedCategory === 'all' || s.category === this.selectedCategory) {
-            allSkillsMap.set(s.name, s);
-          }
-        });
+        if (emp && emp.skills && Array.isArray(emp.skills)) {
+          emp.skills.forEach(s => {
+            if (this.selectedCategory === 'all' || s.category === this.selectedCategory) {
+              allSkillsMap.set(s.name, s);
+            }
+          });
+        }
       });
       return Array.from(allSkillsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
     },
     filteredEmployees() {
       return this.employees.filter(emp => {
+        if (!emp) return false;
+        
         const age = this.calcAge(emp.birthYear);
 
         if (this.gender && emp.gender !== this.gender) return false;
-        if (age < this.minAge || age > this.maxAge) return false;
+        // 只有当age是有效的数字时才进行年龄范围过滤
+        if (typeof age === 'number' && (age < this.minAge || age > this.maxAge)) return false;
         if (emp.experience < this.minExperience || emp.experience > this.maxExperience) return false;
+        // 部门过滤
+        if (this.department && emp.department !== this.department) return false;
 
+        // 技術スキル - 确保skills是数组
+        const employeeSkills = emp.skills && Array.isArray(emp.skills) ? emp.skills : [];
+        
         // 技術スキル
         if (this.selectedSkills.length > 0) {
-          const hasAnySkill = emp.skills.some(s => this.selectedSkills.includes(s.name));
+          const hasAnySkill = employeeSkills.some(s => this.selectedSkills.includes(s.name));
           if (!hasAnySkill) return false;
 
           if (this.techLevel) {
-            const matchLevel = emp.skills.some(s => this.selectedSkills.includes(s.name) && s.level === this.techLevel && s.expYears >= this.techExpYears);
+            const matchLevel = employeeSkills.some(s => this.selectedSkills.includes(s.name) && s.level === this.techLevel && s.expYears >= this.techExpYears);
             if (!matchLevel) return false;
           } else {
-            const matchExp = emp.skills.some(s => this.selectedSkills.includes(s.name) && s.expYears >= this.techExpYears);
+            const matchExp = employeeSkills.some(s => this.selectedSkills.includes(s.name) && s.expYears >= this.techExpYears);
             if (!matchExp) return false;
           }
         } else {
           if (this.techExpYears > 0) {
-            const hasExp = emp.skills.some(s => s.expYears >= this.techExpYears);
+            const hasExp = employeeSkills.some(s => s.expYears >= this.techExpYears);
             if (!hasExp) return false;
           }
           if (this.techLevel) {
-            const hasLevel = emp.skills.some(s => s.level === this.techLevel);
+            const hasLevel = employeeSkills.some(s => s.level === this.techLevel);
             if (!hasLevel) return false;
           }
         }
@@ -237,20 +225,98 @@ export default {
       return this.filteredEmployees.slice(0, 10);
     }
   },
+  created() {
+    // 初始化部门列表
+    this.fetchDepartments();
+  },
   methods: {
+    // 获取部门列表
+    async fetchDepartments() {
+      try {
+        // 从employees数据中提取不重复的部门名称
+        const departmentsSet = new Set();
+        this.employees.forEach(emp => {
+          if (emp && emp.department) {
+            departmentsSet.add(emp.department);
+          }
+        });
+        this.departments = Array.from(departmentsSet).sort();
+      } catch (error) {
+        console.error('部署リストの取得エラー:', error);
+      }
+    },
     calcAge(birthYear) {
       const now = new Date();
+      // 添加安全检查，确保birthYear是有效的数字
+      if (!birthYear || isNaN(birthYear)) {
+        return ''; // 如果birthYear无效，返回空字符串
+      }
       return now.getFullYear() - birthYear;
     },
-    onSearch() {
-      // Vueではcomputedで自動更新されるので処理不要
+    async onSearch() {
+      try {
+        this.isLoading = true;
+        // 构建查询参数
+        const searchParams = {
+          category: this.selectedCategory === 'all' ? '' : this.selectedCategory,
+          skills: this.selectedSkills,
+          techLevel: this.techLevel,
+          techExpYears: this.techExpYears,
+          gender: this.gender,
+          minAge: this.minAge,
+          maxAge: this.maxAge,
+          minExperience: this.minExperience,
+          maxExperience: this.maxExperience,
+          department: this.department
+        };
+        
+        // 发送请求到后端
+        const response = await request.post('/employee/search', searchParams);
+        // 更新员工数据
+        this.employees = response || [];
+        // 更新部门列表
+        this.fetchDepartments();
+      } catch (error) {
+        console.error('検索エラー:', error);
+        alert('検索に失敗しました。\n' + (error.response?.data?.message || 'エラーが発生しました'));
+      } finally {
+        this.isLoading = false;
+      }
     },
-    openModal(emp) {
-      // 基本情報 + 資格 + プロジェクト
-      this.modalEmployeeInfo = { ...emp.basicInfo };
-      if (emp.qualifications && emp.qualifications.length > 0) this.modalEmployeeInfo['資格'] = emp.qualifications;
-      if (emp.projects && emp.projects.length > 0) this.modalEmployeeInfo['プロジェクト経験'] = emp.projects.map(p => `${p.name} （${p.period}） - 役割: ${p.role}`);
-      this.isModalActive = true;
+    async openModal(emp) {
+      try {
+        this.isLoading = true;
+        // 请求员工详情
+        const response = await request.get(`/employee/detail/${emp.id}`);
+        const employee = response || emp; // 如果请求失败，使用表格中的数据
+        
+        // 构建模态框显示的信息
+        // 直接使用employee对象，因为后端返回的数据没有basicInfo嵌套结构
+        this.modalEmployeeInfo = { ...employee };
+        // 移除不需要直接显示的嵌套对象
+        delete this.modalEmployeeInfo.qualifications;
+        delete this.modalEmployeeInfo.projects;
+        // 如果有资格证书信息，添加到模态框数据中
+        if (employee.qualifications && employee.qualifications.length > 0) this.modalEmployeeInfo['資格'] = employee.qualifications;
+        // 如果有项目经验信息，添加到模态框数据中
+        if (employee.projects && employee.projects.length > 0) this.modalEmployeeInfo['プロジェクト経験'] = employee.projects.map(p => `${p.name} （${p.period}） - 役割: ${p.role}`);
+        this.isModalActive = true;
+      } catch (error) {
+        console.error('詳細取得エラー:', error);
+        // 如果详情请求失败，尝试使用表格中已有的数据
+        this.modalEmployeeInfo = { ...emp };
+        // 移除不需要直接显示的嵌套对象
+        delete this.modalEmployeeInfo.qualifications;
+        delete this.modalEmployeeInfo.projects;
+        // 如果有资格证书信息，添加到模态框数据中
+        if (emp.qualifications && emp.qualifications.length > 0) this.modalEmployeeInfo['資格'] = emp.qualifications;
+        // 如果有项目经验信息，添加到模态框数据中
+        if (emp.projects && emp.projects.length > 0) this.modalEmployeeInfo['プロジェクト経験'] = emp.projects.map(p => `${p.name} （${p.period}） - 役割: ${p.role}`);
+        this.isModalActive = true;
+        alert('詳細情報の取得に失敗しましたが、基本情報を表示します。');
+      } finally {
+        this.isLoading = false;
+      }
     },
     closeModal() {
       this.isModalActive = false;
@@ -472,6 +538,39 @@ export default {
       font-weight: 600;
       color: #1f2e4a;
       text-align: right;
+    }
+
+    /* 加载指示器 */
+    .loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: #1a4f9c;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e0e7ff;
+      border-top: 4px solid #1a4f9c;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 无数据提示 */
+    .no-data {
+      text-align: center;
+      color: #777;
+      padding: 40px 20px !important;
+      font-style: italic;
     }
 
     /* モーダル */
