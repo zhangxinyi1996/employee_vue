@@ -49,16 +49,16 @@
 
         <h3>カテゴリ別平均スキルレベル</h3>
         <div class="chart-container">
-          <BarChart :chartData="categoryBarChartData" :chartOptions="barChartOptions" />
-          <div v-if="!isLoading && employees.length > 0 && categoryBarChartData && categoryBarChartData.labels && categoryBarChartData.labels.length === 0" class="no-data">
+          <BarChart v-if="categoryBarChartData && categoryBarChartData.labels && categoryBarChartData.labels.length > 0" :chartData="categoryBarChartData" :chartOptions="barChartOptions" />
+          <div v-else-if="!isLoading && selectedEmployee1" class="no-data">
             表示するスキルデータがありません
           </div>
         </div>
 
         <h3>上位スキルレーダーチャート</h3>
         <div class="chart-container">
-          <RadarChart :chartData="topSkillsRadarData" :chartOptions="radarChartOptions" />
-          <div v-if="!isLoading && employees.length > 0 && topSkillsRadarData && topSkillsRadarData.labels && topSkillsRadarData.labels.length === 0" class="no-data">
+          <RadarChart v-if="topSkillsRadarData && topSkillsRadarData.labels && topSkillsRadarData.labels.length > 0" :chartData="topSkillsRadarData" :chartOptions="radarChartOptions" />
+          <div v-else-if="!isLoading && selectedEmployee1" class="no-data">
             表示するスキルデータがありません
           </div>
         </div>
@@ -85,16 +85,16 @@
 
         <h3>カテゴリ別平均スキルレベル比較</h3>
         <div class="chart-container">
-          <BarChart :chartData="multiCategoryBarData" :chartOptions="barChartOptions" />
-          <div v-if="!isLoading && employees.length > 0 && multiCategoryBarData && multiCategoryBarData.labels && multiCategoryBarData.labels.length === 0" class="no-data">
+          <BarChart v-if="multiCategoryBarData && multiCategoryBarData.labels && multiCategoryBarData.labels.length > 0" :chartData="multiCategoryBarData" :chartOptions="barChartOptions" />
+          <div v-else-if="!isLoading" class="no-data">
             比較する従業員を選択してください
           </div>
         </div>
 
         <h3>主要スキルレーダーチャート比較</h3>
         <div class="chart-container">
-          <RadarChart :chartData="multiTopSkillsRadarData" :chartOptions="radarChartOptions" />
-          <div v-if="!isLoading && employees.length > 0 && multiTopSkillsRadarData && multiTopSkillsRadarData.labels && multiTopSkillsRadarData.labels.length === 0" class="no-data">
+          <RadarChart v-if="multiTopSkillsRadarData && multiTopSkillsRadarData.labels && multiTopSkillsRadarData.labels.length > 0" :chartData="multiTopSkillsRadarData" :chartOptions="radarChartOptions" />
+          <div v-else-if="!isLoading" class="no-data">
             比較する従業員を選択してください
           </div>
         </div>
@@ -104,7 +104,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, h } from "vue";
 import { Chart as ChartJS, Title, Tooltip, Legend, RadialLinearScale, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Filler } from "chart.js";
 import { Bar, Radar } from "vue-chartjs";
 import request from '@/utils/request'
@@ -112,88 +112,45 @@ import { logoutAndRedirect } from '@/utils/auth'
 
 ChartJS.register(Title, Tooltip, Legend, RadialLinearScale, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
-// 安全なバーチャートコンポーネント
+// 安全なバーチャートコンポーネント（ランタイムテンプレート非依存のレンダー関数版）
 const SafeBarChart = {
+  name: 'SafeBarChart',
   props: {
-    chartData: {
-      type: Object,
-      required: true,
-      default: () => ({ labels: [], datasets: [] })
-    },
-    chartOptions: {
-      type: Object,
-      required: true,
-      default: () => ({})
-    }
+    chartData: { type: Object, required: true, default: () => ({ labels: [], datasets: [] }) },
+    chartOptions: { type: Object, required: true, default: () => ({}) }
   },
-  components: { Bar },
-  template: `
-    <div class="safe-chart-container">
-      <Bar :key="chartKey" :data="validChartData" :options="chartOptions" />
-    </div>
-  `,
-  computed: {
-    chartKey() {
-      // データが更新されるたびに異なるキーを生成し、コンポーネントを再作成
-      return JSON.stringify(this.chartData);
-    },
-    validChartData() {
-      console.log (this.chartData, 'chartData=====')
-      // デフォルトデータを提供し、データが存在しない場合のエラーを防止
-      if (!this.chartData) return { labels: [], datasets: [] };
-      
-      const labels = this.chartData.labels && Array.isArray(this.chartData.labels) 
-        ? this.chartData.labels 
-        : [];
-      
-      const datasets = this.chartData.datasets && Array.isArray(this.chartData.datasets) 
-        ? this.chartData.datasets 
-        : [];
-      
+  setup(props) {
+    const chartKey = computed(() => JSON.stringify(props.chartData));
+    const validChartData = computed(() => {
+      if (!props.chartData) return { labels: [], datasets: [] };
+      const labels = Array.isArray(props.chartData.labels) ? props.chartData.labels : [];
+      const datasets = Array.isArray(props.chartData.datasets) ? props.chartData.datasets : [];
       return { labels, datasets };
-    }
+    });
+    return () => h('div', { class: 'safe-chart-container' }, [
+      h(Bar, { key: chartKey.value, data: validChartData.value, options: props.chartOptions })
+    ]);
   }
 };
 
-// 安全なレーダーチャートコンポーネント
+// 安全なレーダーチャートコンポーネント（レンダー関数版）
 const SafeRadarChart = {
+  name: 'SafeRadarChart',
   props: {
-    chartData: {
-      type: Object,
-      required: true,
-      default: () => ({ labels: [], datasets: [] })
-    },
-    chartOptions: {
-      type: Object,
-      required: true,
-      default: () => ({})
-    }
+    chartData: { type: Object, required: true, default: () => ({ labels: [], datasets: [] }) },
+    chartOptions: { type: Object, required: true, default: () => ({}) }
   },
-  components: { Radar },
-  template: `
-    <div class="safe-chart-container">
-      <Radar :key="chartKey" :data="validChartData" :options="chartOptions" />
-    </div>
-  `,
-  computed: {
-    chartKey() {
-      // データが更新されるたびに異なるキーを生成し、コンポーネントを再作成
-      return JSON.stringify(this.chartData);
-    },
-    validChartData() {
-      // デフォルトデータを提供し、データが存在しない場合のエラーを防止
-      if (!this.chartData) return { labels: [], datasets: [] };
-      
-      const labels = this.chartData.labels && Array.isArray(this.chartData.labels) 
-        ? this.chartData.labels 
-        : [];
-      
-      const datasets = this.chartData.datasets && Array.isArray(this.chartData.datasets) 
-        ? this.chartData.datasets 
-        : [];
-      
+  setup(props) {
+    const chartKey = computed(() => JSON.stringify(props.chartData));
+    const validChartData = computed(() => {
+      if (!props.chartData) return { labels: [], datasets: [] };
+      const labels = Array.isArray(props.chartData.labels) ? props.chartData.labels : [];
+      const datasets = Array.isArray(props.chartData.datasets) ? props.chartData.datasets : [];
       return { labels, datasets };
-    }
+    });
+    return () => h('div', { class: 'safe-chart-container' }, [
+      h(Radar, { key: chartKey.value, data: validChartData.value, options: props.chartOptions })
+    ]);
   }
 };
 
@@ -207,7 +164,7 @@ export default {
     const employees = ref([]);
     const isLoading = ref(false);
     const skillAnalysisData = ref({});
-    const multiEmployeeSkills = ref({});
+    const multiEmployeeSkills = ref([]);
     
     const selectedEmployee1 = ref("");
     const selectedEmployee2 = ref("");
@@ -220,7 +177,8 @@ export default {
         isLoading.value = true;
         const response = await request.post('/employee/search', {});
         console.log('取得した従業員データ:', response);
-        employees.value = response || [];
+        // 修正：从response.data.list或response.list中提取员工数据
+        employees.value = response?.data?.list || response?.list || [];
         
         // 设置默认选中的员工
         if (employees.value.length > 0) {
@@ -251,12 +209,10 @@ export default {
         const response = await request.get(`/employee/skill-analysis/by-employee/${employeeId}`);
         console.log('単一従業員のスキル分析データ:', response);
         // レスポンスデータの構造を確認し、チャートデータに適した形式に変換
-        if (response && response.code === 200 && response.data) {
-          skillAnalysisData.value = response.data;
-        } else {
-          // レスポンスが予期しない形式の場合、デフォルトの空オブジェクトを使用
-          skillAnalysisData.value = response || {};
-        }
+        // 注意：axios响应拦截器已经返回了res.data（实际业务数据），所以response就是我们需要的数据
+        skillAnalysisData.value = response || {};
+        console.log('设置后的skillAnalysisData.value:', skillAnalysisData.value);
+        console.log('skillAnalysisData.value.skills:', skillAnalysisData.value.skills);
       } catch (error) {
         console.error('単一従業員スキル分析の取得エラー:', error.response?.data || error.message);
         skillAnalysisData.value = {};
@@ -269,7 +225,7 @@ export default {
     const fetchMultiEmployeeSkills = async () => {
       const employeeIds = [selectedEmployee2.value, selectedEmployee3.value, selectedEmployee4.value].filter(id => id);
       if (employeeIds.length === 0) {
-        multiEmployeeSkills.value = {};
+        multiEmployeeSkills.value = [];
         return;
       }
 
@@ -278,15 +234,12 @@ export default {
         const response = await request.post('/employee/skill-analysis/by-employees', { employeeIds });
         console.log('複数従業員のスキル比較データ:', response);
         // レスポンスデータの構造を確認し、チャートデータに適した形式に変換
-        if (response && response.code === 200 && response.data) {
-          multiEmployeeSkills.value = response.data;
-        } else {
-          // レスポンスが予期しない形式の場合、デフォルトの空オブジェクトを使用
-          multiEmployeeSkills.value = response || {};
-        }
+        // 注意：axios响应拦截器已经返回了res.data（实际业务数据），所以response就是我们需要的数据
+        multiEmployeeSkills.value = response || [];
+        console.log('设置后的multiEmployeeSkills.value:', multiEmployeeSkills.value);
       } catch (error) {
         console.error('複数従業員スキル比較の取得エラー:', error.response?.data || error.message);
-        multiEmployeeSkills.value = {};
+        multiEmployeeSkills.value = [];
       } finally {
         isLoading.value = false;
       }
@@ -434,12 +387,14 @@ export default {
 
     const barChartOptions = {
       responsive: true,
+      maintainAspectRatio: false,
       scales: { y: { beginAtZero:true, max:7, ticks:{ stepSize:1 } }, x:{ title:{ display:true, text:"カテゴリ" } } },
       plugins: { legend:{ display:true } }
     };
 
     const radarChartOptions = {
       responsive: true,
+      maintainAspectRatio: false,
       scales: { r: { beginAtZero:true, min:0, max:7, ticks:{ stepSize:1 }, pointLabels:{ font:{ size:14, weight:"600" } } } },
       plugins: { legend:{ position:"top" } }
     };
@@ -463,12 +418,17 @@ export default {
 
     // 监听员工选择变化，更新技能分析数据
     watch(selectedEmployee1, (newValue) => {
+      if (newValue) {  // 只有选择了员工才调用
       fetchEmployeeSkillAnalysis(newValue);
+      }
     });
     
     // 监听多个员工选择变化，更新技能比较数据
     watch([selectedEmployee2, selectedEmployee3, selectedEmployee4], () => {
+      const employeeIds = [selectedEmployee2.value, selectedEmployee3.value, selectedEmployee4.value].filter(id => id);
+      if (employeeIds.length > 0) {  // 只有至少选择一个员工才调用
       fetchMultiEmployeeSkills();
+      }
     });
 
     return {
@@ -576,23 +536,22 @@ body {
 .no-data {
   text-align: center;
   color: #777;
-  padding: 40px 20px !important;
+  padding: 40px 20px;
   font-style: italic;
   font-size: 16px;
   min-height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
 }
 
-/* 安全チャートコンテナ */
-.safe-chart-container {
-  width: 100%;
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* 安全チャートコンテナ（削除済み・下部に統合） */
 .container {
   max-width: 1000px;
   margin: 50px auto 100px;
@@ -652,7 +611,26 @@ dl.basic-info dd {
 
 .chart-container {
   max-width: 700px;
+  height: 400px;
   margin: 0 auto 50px;
+  position: relative;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.safe-chart-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.safe-chart-container canvas {
+  display: block !important;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* レスポンシブ */
