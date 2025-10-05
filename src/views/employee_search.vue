@@ -77,7 +77,7 @@
       </form>
 
       <div id="resultCount" aria-live="polite" aria-atomic="true">
-        検索結果：{{ filteredEmployees.length }} 件（上位10件まで表示）
+        検索結果：{{ pagination.total }} 件
       </div>
 
       <div v-if="isLoading" class="loading-indicator">
@@ -90,49 +90,112 @@
             <th>氏名</th>
             <th>部署</th>
             <th>役職</th>
-            <th>性別</th>
-            <th>年齢</th>
-            <th>仕事年数</th>
-            <th>技術スキル</th>
-            <th>詳細</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="filteredEmployees.length === 0">
-            <td colspan="8" class="no-data">検索結果がありません</td>
+            <td colspan="4" class="no-data">検索結果がありません</td>
           </tr>
-          <tr v-for="emp in topFilteredEmployees" :key="emp.id">
+          <tr v-for="emp in filteredEmployees" :key="emp.id">
             <td>{{ emp.name }}</td>
             <td>{{ emp.department }}</td>
             <td>{{ emp.position }}</td>
-            <td>{{ emp.gender }}</td>
-            <td>{{ calcAge(emp.birthYear) }}</td>
-            <td>{{ emp.experience }}</td>
-            <td>{{ emp.skills && Array.isArray(emp.skills) ? emp.skills.map(s => s.name).join(', ') : '' }}</td>
             <td>
               <button type="button" class="info-btn" @click="openModal(emp)">詳細</button>
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- 分页组件 -->
+      <div v-if="pagination.total > 0" class="pagination-container">
+        <div class="pagination-info">
+          全 {{ pagination.total }} 件中 {{ (pagination.page - 1) * pagination.pageSize + 1 }} - {{ Math.min(pagination.page * pagination.pageSize, pagination.total) }} 件を表示
+        </div>
+        <div class="pagination-controls">
+          <button 
+            class="page-btn" 
+            :disabled="pagination.page === 1" 
+            @click="changePage(1)"
+            title="最初のページ"
+          >
+            ≪
+          </button>
+          <button 
+            class="page-btn" 
+            :disabled="pagination.page === 1" 
+            @click="changePage(pagination.page - 1)"
+            title="前のページ"
+          >
+            ＜
+          </button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page"
+            class="page-btn page-number" 
+            :class="{ active: page === pagination.page }"
+            @click="changePage(page)"
+          >
+            {{ page }}
+          </button>
+          
+          <button 
+            class="page-btn" 
+            :disabled="pagination.page === pagination.totalPages" 
+            @click="changePage(pagination.page + 1)"
+            title="次のページ"
+          >
+            ＞
+          </button>
+          <button 
+            class="page-btn" 
+            :disabled="pagination.page === pagination.totalPages" 
+            @click="changePage(pagination.totalPages)"
+            title="最後のページ"
+          >
+            ≫
+          </button>
+          
+          <span class="page-jump">
+            ページへ移動:
+            <input 
+              type="number" 
+              v-model.number="jumpPage" 
+              min="1" 
+              :max="pagination.totalPages"
+              @keyup.enter="jumpToPage"
+            />
+            <button class="page-btn" @click="jumpToPage">移動</button>
+          </span>
+          
+          <select v-model.number="pagination.pageSize" @change="changePageSize" class="page-size-select">
+            <option :value="10">10件/ページ</option>
+            <option :value="20">20件/ページ</option>
+            <option :value="50">50件/ページ</option>
+            <option :value="100">100件/ページ</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- モーダル -->
     <div class="modal" :class="{ active: isModalActive }" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
       <div class="modal-content">
         <button type="button" class="modal-close-btn" aria-label="閉じる" @click="closeModal">&times;</button>
-        <h2 id="modalTitle">基本情報</h2>
-        <dl class="basic-info">
-          <template v-for="(value, key) in modalEmployeeInfo" :key="key">
-            <dt>{{ key }}</dt>
-            <dd v-if="Array.isArray(value)">
+        <h2 id="modalTitle">社員詳細情報</h2>
+        <div class="detail-grid">
+          <div v-for="(value, key) in modalEmployeeInfo" :key="key" class="detail-item">
+            <div class="detail-label">{{ key }}</div>
+            <div class="detail-value" v-if="Array.isArray(value)">
               <ul>
                 <li v-for="(v, i) in value" :key="i">{{ v }}</li>
               </ul>
-            </dd>
-            <dd v-else>{{ value }}</dd>
-          </template>
-        </dl>
+            </div>
+            <div class="detail-value" v-else>{{ value || '未設定' }}</div>
+          </div>
+        </div>
         <div id="modalDesc" class="visually-hidden">
           従業員の基本情報の詳細を表示しています。
         </div>
@@ -162,7 +225,15 @@ export default {
       departments: [],
       isLoading: false,
       isModalActive: false,
-      modalEmployeeInfo: {}
+      modalEmployeeInfo: {},
+      // 分页相关
+      pagination: {
+        page: 1,
+        pageSize: 10,
+        total: 0,
+        totalPages: 0
+      },
+      jumpPage: 1
     }
   },
   computed: {
@@ -180,49 +251,43 @@ export default {
       return Array.from(allSkillsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
     },
     filteredEmployees() {
-      return this.employees.filter(emp => {
-        if (!emp) return false;
-        
-        const age = this.calcAge(emp.birthYear);
-
-        if (this.gender && emp.gender !== this.gender) return false;
-        // 只有当age是有效的数字时才进行年龄范围过滤
-        if (typeof age === 'number' && (age < this.minAge || age > this.maxAge)) return false;
-        if (emp.experience < this.minExperience || emp.experience > this.maxExperience) return false;
-        // 部门过滤
-        if (this.department && emp.department !== this.department) return false;
-
-        // 技術スキル - 确保skills是数组
-        const employeeSkills = emp.skills && Array.isArray(emp.skills) ? emp.skills : [];
-        
-        // 技術スキル
-        if (this.selectedSkills.length > 0) {
-          const hasAnySkill = employeeSkills.some(s => this.selectedSkills.includes(s.name));
-          if (!hasAnySkill) return false;
-
-          if (this.techLevel) {
-            const matchLevel = employeeSkills.some(s => this.selectedSkills.includes(s.name) && s.level === this.techLevel && s.expYears >= this.techExpYears);
-            if (!matchLevel) return false;
-          } else {
-            const matchExp = employeeSkills.some(s => this.selectedSkills.includes(s.name) && s.expYears >= this.techExpYears);
-            if (!matchExp) return false;
-          }
-        } else {
-          if (this.techExpYears > 0) {
-            const hasExp = employeeSkills.some(s => s.expYears >= this.techExpYears);
-            if (!hasExp) return false;
-          }
-          if (this.techLevel) {
-            const hasLevel = employeeSkills.some(s => s.level === this.techLevel);
-            if (!hasLevel) return false;
-          }
-        }
-
-        return true;
-      });
+      // 直接返回后端分页数据
+      return this.employees;
     },
-    topFilteredEmployees() {
-      return this.filteredEmployees.slice(0, 10);
+    // 计算可见的页码
+    visiblePages() {
+      const pages = [];
+      const total = this.pagination.totalPages;
+      const current = this.pagination.page;
+      
+      if (total <= 7) {
+        // 总页数小于等于7，显示所有页码
+        for (let i = 1; i <= total; i++) {
+          pages.push(i);
+        }
+      } else {
+        // 总页数大于7，智能显示
+        if (current <= 4) {
+          // 当前页在前面
+          for (let i = 1; i <= 5; i++) pages.push(i);
+          pages.push('...');
+          pages.push(total);
+        } else if (current >= total - 3) {
+          // 当前页在后面
+          pages.push(1);
+          pages.push('...');
+          for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+          // 当前页在中间
+          pages.push(1);
+          pages.push('...');
+          for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+          pages.push('...');
+          pages.push(total);
+        }
+      }
+      
+      return pages;
     }
   },
   created() {
@@ -253,10 +318,15 @@ export default {
       }
       return now.getFullYear() - birthYear;
     },
-    async onSearch() {
+    async onSearch(resetPage = true) {
       try {
         this.isLoading = true;
-        // 构建查询参数
+        // 重置页码（新搜索时）
+        if (resetPage) {
+          this.pagination.page = 1;
+        }
+        
+        // 构建查询参数（包含分页）
         const searchParams = {
           category: this.selectedCategory === 'all' ? '' : this.selectedCategory,
           skills: this.selectedSkills,
@@ -267,13 +337,26 @@ export default {
           maxAge: this.maxAge,
           minExperience: this.minExperience,
           maxExperience: this.maxExperience,
-          department: this.department
+          department: this.department,
+          page: this.pagination.page,
+          pageSize: this.pagination.pageSize
         };
         
         // 发送请求到后端
         const response = await request.post('/employee/search', searchParams);
-        // 更新员工数据
-        this.employees = response || [];
+        
+        // 更新员工数据和分页信息
+        if (response) {
+          this.employees = response.list || [];
+          this.pagination.total = response.total || 0;
+          this.pagination.page = response.page || 1;
+          this.pagination.pageSize = response.pageSize || 10;
+          this.pagination.totalPages = response.totalPages || 0;
+        } else {
+          this.employees = [];
+          this.pagination.total = 0;
+        }
+        
         // 更新部门列表
         this.fetchDepartments();
       } catch (error) {
@@ -282,6 +365,25 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+    // 切换页码
+    changePage(page) {
+      if (page === '...' || page < 1 || page > this.pagination.totalPages) return;
+      this.pagination.page = page;
+      this.onSearch(false); // 不重置页码
+    },
+    // 改变每页显示数量
+    changePageSize() {
+      this.pagination.page = 1; // 重置到第一页
+      this.onSearch(false);
+    },
+    // 跳转到指定页
+    jumpToPage() {
+      if (this.jumpPage < 1 || this.jumpPage > this.pagination.totalPages) {
+        alert(`ページ番号は 1 から ${this.pagination.totalPages} の間で入力してください`);
+        return;
+      }
+      this.changePage(this.jumpPage);
     },
     async openModal(emp) {
       try {
@@ -595,84 +697,304 @@ export default {
 
     .modal-content {
       background: white;
-      max-width: 700px;
+      max-width: 900px;
       margin: 0 auto;
-      border-radius: 12px;
-      padding: 30px 40px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      border-radius: 16px;
+      padding: 40px 50px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       position: relative;
       font-size: 15px;
       color: #2e3a59;
-      line-height: 1.6;
+      line-height: 1.7;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal-close-btn {
       position: absolute;
       top: 18px;
       right: 22px;
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
-      color: #666;
+      color: #999;
       background: none;
       border: none;
       cursor: pointer;
       padding: 0;
       line-height: 1;
-      transition: color 0.2s ease;
+      transition: color 0.2s ease, transform 0.2s ease;
     }
 
     .modal-close-btn:hover {
       color: #1a4f9c;
+      transform: rotate(90deg);
     }
 
     .modal-content h2 {
       margin-top: 0;
-      margin-bottom: 24px;
+      margin-bottom: 30px;
       font-weight: 700;
-      color: #1f2e4a;
-      letter-spacing: 0.06em;
-      font-size: 22px;
+      color: #1a4f9c;
+      letter-spacing: 0.08em;
+      font-size: 26px;
       text-align: center;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #1a4f9c;
     }
 
-    dl.basic-info {
+    .detail-grid {
       display: grid;
-      grid-template-columns: 140px 1fr;
-      row-gap: 14px;
-      column-gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+      margin-top: 10px;
     }
 
-    dl.basic-info dt {
+    .detail-item {
+      background: linear-gradient(145deg, #f8faff, #eef3ff);
+      border: 2px solid #d0daf5;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 
+        3px 3px 6px rgba(26, 79, 156, 0.1),
+        -2px -2px 6px rgba(255, 255, 255, 0.9);
+      transition: all 0.3s ease;
+    }
+
+    .detail-item:hover {
+      border-color: #1a4f9c;
+      box-shadow: 
+        4px 4px 10px rgba(26, 79, 156, 0.2),
+        -3px -3px 8px rgba(255, 255, 255, 1);
+      transform: translateY(-2px);
+    }
+
+    .detail-label {
       font-weight: 700;
-      color: #455a86;
+      color: #1a4f9c;
+      font-size: 14px;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
     }
 
-    dl.basic-info dd {
-      margin: 0;
-      white-space: pre-wrap;
+    .detail-label::before {
+      content: '■';
+      margin-right: 8px;
+      color: #1a4f9c;
+      font-size: 12px;
+    }
+
+    .detail-value {
+      color: #2e3a59;
       font-weight: 500;
-      color: #344a91;
+      font-size: 15px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding-left: 20px;
     }
 
-    dl.basic-info dd ul {
+    .detail-value ul {
       margin: 0;
-      padding-left: 18px;
-      list-style: disc;
+      padding-left: 20px;
+      list-style: circle;
     }
 
-    dl.basic-info dd ul li {
-      margin-bottom: 4px;
+    .detail-value ul li {
+      margin-bottom: 6px;
+      line-height: 1.6;
+    }
+
+    /* 自己PR等の長いテキスト用 */
+    .detail-item:has(.detail-label:contains('自己PR')),
+    .detail-item:has(.detail-label:contains('住所')) {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 900px) {
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .modal-content {
+        padding: 30px 25px;
+        max-width: 95%;
+      }
     }
 
     @media (max-width: 600px) {
       form {
         grid-template-columns: 1fr 1fr;
       }
+      
+      .detail-item {
+        padding: 12px 16px;
+      }
+      
+      .modal-content h2 {
+        font-size: 22px;
+      }
     }
 
     @media (max-width: 400px) {
       form {
         grid-template-columns: 1fr;
+      }
+    }
+
+    /* 分页样式 */
+    .pagination-container {
+      margin-top: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8faff, #ffffff);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .pagination-info {
+      text-align: center;
+      color: #2e3a59;
+      font-weight: 500;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      min-width: 40px;
+      height: 40px;
+      padding: 8px 12px;
+      border: 2px solid #d0daf5;
+      background: white;
+      color: #2e3a59;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1a4f9c, #2d6cb8);
+      color: white;
+      border-color: #1a4f9c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(26, 79, 156, 0.3);
+    }
+
+    .page-btn:disabled {
+      background: #f5f5f5;
+      color: #ccc;
+      cursor: not-allowed;
+      border-color: #e0e0e0;
+    }
+
+    .page-btn.page-number.active {
+      background: linear-gradient(135deg, #1a4f9c, #2d6cb8);
+      color: white;
+      border-color: #1a4f9c;
+      box-shadow: 0 4px 10px rgba(26, 79, 156, 0.4);
+    }
+
+    .page-jump {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 15px;
+      color: #2e3a59;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .page-jump input {
+      width: 60px;
+      height: 40px;
+      padding: 8px;
+      border: 2px solid #d0daf5;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      transition: border-color 0.3s ease;
+    }
+
+    .page-jump input:focus {
+      outline: none;
+      border-color: #1a4f9c;
+      box-shadow: 0 0 0 3px rgba(26, 79, 156, 0.1);
+    }
+
+    .page-size-select {
+      height: 40px;
+      padding: 8px 12px;
+      border: 2px solid #d0daf5;
+      border-radius: 8px;
+      background: white;
+      color: #2e3a59;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      margin-left: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .page-size-select:hover {
+      border-color: #1a4f9c;
+    }
+
+    .page-size-select:focus {
+      outline: none;
+      border-color: #1a4f9c;
+      box-shadow: 0 0 0 3px rgba(26, 79, 156, 0.1);
+    }
+
+    /* 分页响应式 */
+    @media (max-width: 768px) {
+      .pagination-controls {
+        gap: 5px;
+      }
+
+      .page-btn {
+        min-width: 35px;
+        height: 35px;
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+
+      .page-jump {
+        margin-left: 5px;
+        font-size: 13px;
+      }
+
+      .page-jump input {
+        width: 50px;
+        height: 35px;
+      }
+
+      .page-size-select {
+        height: 35px;
+        font-size: 13px;
+        margin-left: 5px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .pagination-controls {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .page-jump,
+      .page-size-select {
+        margin-left: 0;
       }
     }
 </style>
