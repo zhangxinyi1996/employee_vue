@@ -246,7 +246,7 @@ const skills = ref([
       ])
 
         
-skills.value = JSON.parse(localStorage.getItem("staffSkillRequestList"))
+skills.value = JSON.parse(localStorage.getItem("staffSkillRequestList")) || skills.value;
 
 const certs = ref([
   { categoryName: "", getYmd: "" },
