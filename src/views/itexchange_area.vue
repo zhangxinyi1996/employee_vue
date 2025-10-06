@@ -285,6 +285,13 @@
             </div>
           </li>
         </ul>
+        
+          <!-- -- 分页按钮 -->
+          <div class="pagination">
+            <button @click="prevPage" :disabled="currentPage === 1">前へ</button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button @click="nextPage" :disabled="currentPage === totalPages">次へ</button>
+          </div>
       </section>
     </div>
   </div>
@@ -390,7 +397,19 @@ export default {
           console.error("请求learning信息失败:", error);
         }
 
-          
+      }else if (activeTab.value === 'training') {
+        try {
+          const res = await request.get("/training/show",{
+            params: { page: currentPage.value, size: pageSize.value }
+          })
+          trainingList.value = res.records
+          currentPage.value = res.page      // 当前页数
+          total.value = res.total          // 总条数
+          totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
+        } catch (error) {
+          console.error("请求training信息失败:", error);
+        }
+      }else{          
         try {
           const resQa = await request.get("/skillQA/show",{
             params: { page: currentPage.value, size: pageSize.value }
@@ -400,21 +419,9 @@ export default {
           total.value = resQa.total          // 总条数
           totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
         } catch (error) {
-          console.error("请求skill questions失败:", error);
+          console.error("请求skill QA失败:", error);
         }
-
-      }else if (activeTab.value === 'training') {
-        try {
-          const res = await request.get("/training/show")
-          trainingList.value = res.records
-        } catch (error) {
-          console.error("请求training信息失败:", error);
-        }
-      }else{
-        console.error("未知的tab类型:", activeTab.value);
       }
-
-
     }
 
     // Methods
@@ -484,8 +491,8 @@ export default {
         }
         
         learningList.value.unshift(newItem)
-        if (learningList.value.length > pageSize.value)  {
-        learningList.value.pop(); // 保持总数不变
+        if (learningList.value.length % pageSize.value === 1 && learningList.value.length > pageSize.value)  {
+            learningList.value.pop(); // 保持总数不变
         }
         Object.assign(newLearning, { title: "", link: "" })
 
@@ -521,6 +528,11 @@ export default {
         }
         
         questions.value.unshift(newQ)
+
+        if (questions.value.length % pageSize.value === 1 && questions.value.length > pageSize.value)  {
+            questions.value.pop(); // 保持总数不变
+        }
+
         newQuestion.content = ""
         if (questions.value.length > pageSize.value)  {
           questions.value.pop(); // 保持总数不变
@@ -582,7 +594,11 @@ export default {
           creatorName: userName // TODO: 実際のユーザー情報
         }
         
-        trainingList.value.push(newT)
+        trainingList.value.unshift(newT)
+        if (trainingList.value.length % pageSize.value === 1 && trainingList.value.length > pageSize.value)  {
+          trainingList.value.pop(); // 保持总数不变
+        }
+
         Object.assign(newTraining, { 
           title: "", 
           trainingDate: "", 
@@ -592,6 +608,8 @@ export default {
         })
         const trainingRes = await request.post("/training/add",newT)
         newT.id = trainingRes.id
+        total.value += 1
+        totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
         //showMessage("研修を登録しました", "success")
       } catch (error) {
         //showMessage("登録に失敗しました", "error")
