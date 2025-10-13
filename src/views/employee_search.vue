@@ -7,8 +7,8 @@
         <li><router-link to="/employee_infoshow">基本情報</router-link></li>
         <li><router-link to="/employee_skillmap">スキル分析</router-link></li>
         <li><router-link to="/employee_search">人材管理</router-link></li>
-        <li><router-link to="/itexchange_area">技術交流モジュール</router-link></li>
-        <li><router-link to="/exchange_area">交流エリア</router-link></li>
+        <li><router-link to="/itexchange_area">技談広場</router-link></li>
+        <li><router-link to="/exchange_area">縁談広場</router-link></li>
         <li class="logout"><a href="#" @click.prevent="logout">ログアウト</a></li>
       </ul>
     </nav>

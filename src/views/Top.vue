@@ -328,7 +328,7 @@ footer {
 }
 .main-nav .language-switcher-wrapper {
   margin-left: auto; /* これで右端に寄せる */
-  margin-right: 800px; 
+  margin-right:   400px; 
 }
 
 @media (max-width: 600px) {
