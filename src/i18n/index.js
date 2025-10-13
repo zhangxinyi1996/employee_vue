@@ -7,8 +7,8 @@ const messages = {
             basic: '基本情報',
             skill: 'スキル分析',
             search: '人材管理',
-            itx: '技術交流モジュール',
-            exchange: '交流エリア',
+            itx: '技談広場',
+            exchange: '縁談広場',
             logout: 'ログアウト',
         },
         login: {
@@ -79,8 +79,8 @@ const messages = {
             basic: '基本信息',
             skill: '技能分析',
             search: '人材管理',
-            itx: '技术交流模块',
-            exchange: '交流区',
+            itx: '技术交流广场',
+            exchange: '交流中心',
             logout: '退出登录',
         },
         login: {
