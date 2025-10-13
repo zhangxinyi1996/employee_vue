@@ -119,8 +119,8 @@ export default {
         "Teams ID": "",
       },
       skills : ([        
-        { "skillId": 0, "name": "Java", "level": 1 },
-        { "skillId": 1, "name": "Python", "level": 2 },
+        { "skillId": 0, "name": "Java", "level": 0 },
+        { "skillId": 1, "name": "Python", "level": 0 },
         { "skillId": 2, "name": "JavaScript", "level": 0 },
         { "skillId": 3, "name": "TypeScript", "level": 0 },
         { "skillId": 4, "name": "AWS", "level": 0 },
@@ -212,7 +212,7 @@ export default {
         localStorage.setItem("gender", apiData.gender || ''); 
         localStorage.setItem("address", apiData.address || ''); 
         localStorage.setItem("education", apiData.education || ''); 
-        localStorage.setItem("staffSkillRequestList", JSON.stringify(apiData.staffSkillRequestList)); 
+        localStorage.setItem("staffSkillRequestList", JSON.stringify(this.skills)); 
         localStorage.setItem("staffCategoryRequestList", JSON.stringify(this.certifications)); 
         localStorage.setItem("staffProjectRequestList", JSON.stringify(this.projects)); 
         localStorage.setItem("departmentRequestList", JSON.stringify(apiData.departmentRequestList)); 
@@ -248,7 +248,9 @@ export default {
         // 同时更新照片路径
         this.photo = data.photoPath || "images/face.jpg";
         this.selfPR = data.selfPr || "";
-        this.skills = data.staffSkillRequestList  || this.skills;
+        const skillList = data.staffSkillRequestList;
+        this.skills = skillList && skillList.length > 0 ? skillList : this.skills;
+        //data.staffSkillRequestList  || this.skills;
         const certList = data.staffCategoryRequestList;
         this.certifications = certList && certList.length > 0 ? certList : this.certifications ;
         const projectsList = data.staffProjectRequestList;
