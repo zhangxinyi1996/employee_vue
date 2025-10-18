@@ -29,7 +29,7 @@
 
         <label>技術スキル（複数選択可）</label>
         <div class="skill-filters" role="group" aria-label="技術スキル選択">
-          <div class="skills">
+          <div class="skills-list">
     <div
       v-for="(skill, index) in filteredSkills"
       :key="index"
@@ -553,6 +553,46 @@ export default {
       border-color: #1a4f9c;
       box-shadow: 0 0 5px rgba(26,79,156,0.5);
     }
+   .skill-filters {
+  grid-column: 1 / -1;
+  display: grid;
+  /* 自動で列数を調整、最小幅140px、最大1fr */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 12px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1.5px solid #c8d0e7;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #f0f4ff, #d9e1ff);
+  box-shadow:
+    4px 4px 6px #bcc9f2,
+    -4px -4px 6px #ffffff;
+}
+
+.skills-list {
+  display: contents; /* 中の .skill をグリッドに沿って整列 */
+}
+
+.skill label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.skill label:hover {
+  background-color: #c3d1ff;
+}
+
+.skill input[type="checkbox"] {
+  transform: scale(1.1);
+  cursor: pointer;
+}
 
     .skill-filters {
       grid-column: 1 / -1;
