@@ -29,9 +29,22 @@
 
         <label>技術スキル（複数選択可）</label>
         <div class="skill-filters" role="group" aria-label="技術スキル選択">
-          <label v-for="skill in filteredSkills" :key="skill.name">
-            <input type="checkbox" v-model="selectedSkills" :value="skill.name" /> {{ skill.name }}
-          </label>
+          <div class="skills">
+    <div
+      v-for="(skill, index) in filteredSkills"
+      :key="index"
+      class="skill"
+    >
+      <label>
+        <input
+          type="checkbox"
+          v-model="selectedSkills"
+          :value="skill"
+        />
+        {{ skill }}
+      </label>
+    </div>
+  </div>
           <span v-if="filteredSkills.length === 0">該当する技術スキルがありません。</span>
         </div>
 
@@ -213,6 +226,13 @@ export default {
     return {
       selectedCategory: 'all',
       selectedSkills: [],
+      skillsByCategory: {
+      language: ["Java", "Python", "JavaScript", "TypeScript", "C#", "Go"],
+      framework: ["Vue.js", "React", "Angular", "Spring Boot", "Django", "Laravel"],
+      cloud: ["AWS", "Azure", "GCP"],
+      tools: ["Docker", "Kubernetes", "Git", "Jenkins", "Terraform"],
+      other: ["Linux", "MySQL", "PostgreSQL", "Excel VBA"],
+    },
       techLevel: '',
       techExpYears: 0,
       gender: '',
@@ -238,18 +258,11 @@ export default {
   },
   computed: {
     filteredSkills() {
-      const allSkillsMap = new Map();
-      this.employees.forEach(emp => {
-        if (emp && emp.skills && Array.isArray(emp.skills)) {
-          emp.skills.forEach(s => {
-            if (this.selectedCategory === 'all' || s.category === this.selectedCategory) {
-              allSkillsMap.set(s.name, s);
-            }
-          });
-        }
-      });
-      return Array.from(allSkillsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
-    },
+      if (this.selectedCategory === "all") {
+      return Object.values(this.skillsByCategory).flat();
+    }
+    return this.skillsByCategory[this.selectedCategory] || [];
+  },
     filteredEmployees() {
       // 直接返回后端分页数据
       return this.employees;
