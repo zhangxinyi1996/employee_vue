@@ -538,7 +538,7 @@ export default {
           questions.value.pop(); // 保持总数不变
         }
 
-        const questionsRes = await request.post("/skillQA/add",newQ)
+        const questionsRes = await request.post("/skillQA/addQuestion",newQ)
         newQ.id = questionsRes.id
         total.value += 1
         totalPages.value = Math.ceil(total.value / pageSize.value) // 总页数
@@ -569,7 +569,7 @@ export default {
         
         question.answers.push(newAnswer)
         question.newAnswer = ""
-        const quRes = await request.post("/skillQA/add",question)
+        const quRes = await request.post("/skillQA/addAnswer",question)
         newAnswer.id = quRes.answers[0].id
         //showMessage("回答を投稿しました", "success")
       } catch (error) {
