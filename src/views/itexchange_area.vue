@@ -567,10 +567,10 @@ export default {
           likeCount: 0
         }
         
-        question.answers.push(newAnswer)
         question.newAnswer = ""
-        const quRes = await request.post("/skillQA/addAnswer",question)
-        newAnswer.id = quRes.answers[0].id
+        const answerRes = await request.post("/skillQA/addAnswer",newAnswer)
+        newAnswer.id = answerRes.id
+        question.answers.push(newAnswer)
         //showMessage("回答を投稿しました", "success")
       } catch (error) {
         //showMessage("回答の投稿に失敗しました", "error")
@@ -626,6 +626,11 @@ export default {
       
       if (answer) {
         answer.likeCount = (answer.likeCount || 0) + 1
+        try {
+          await request.post("/skillQA/likeAnswerUpdate",answer) 
+        } catch (error) {
+          //showMessage("登録に失敗しました", "error")
+        }
       }
     }
 
